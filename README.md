@@ -1,6 +1,6 @@
 # Nuestro día
 
-Organizador local de boda, creado con React y TypeScript. La sección inicial permite administrar invitados, sus acompañantes, asistencia, invitaciones simbólicas y si son niños.
+Organizador local de boda, creado con React y TypeScript. La sección inicial permite administrar invitados, sus acompañantes, asistencia, invitaciones simbólicas, si son niños y sus roles de boda (Best man o Bridesmaid).
 
 ## Requisitos
 
@@ -30,3 +30,7 @@ npm start
 La versión de producción queda disponible en `http://127.0.0.1:4173`.
 
 Los invitados se guardan en `data/guests.json` en la computadora donde se ejecuta el servidor. El servidor escucha únicamente en la interfaz local. Haz una copia de ese archivo para respaldar la lista; no se incluye en Git para evitar publicar datos personales.
+
+## Documentación técnica
+
+La arquitectura, el modelo de datos, la API, la persistencia y los comandos están descritos en [docs/technical.md](./docs/technical.md). Mantén esa guía actualizada conforme se agreguen secciones y funciones.

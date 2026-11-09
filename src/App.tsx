@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type Gender = "female" | "male" | "other" | "undisclosed";
+type WeddingRole = "none" | "bestMan" | "bridesmaid";
 type Guest = {
   id: string;
   firstName: string;
@@ -12,6 +13,7 @@ type Guest = {
   symbolicInvitation: boolean;
   isChild: boolean;
   gender: Gender;
+  weddingRole: WeddingRole;
 };
 type GuestForm = Omit<Guest, "id">;
 
@@ -25,6 +27,7 @@ const emptyForm: GuestForm = {
   symbolicInvitation: false,
   isChild: false,
   gender: "undisclosed",
+  weddingRole: "none",
 };
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -100,6 +103,7 @@ function App() {
       symbolicInvitation: guest.symbolicInvitation,
       isChild: guest.isChild,
       gender: guest.gender,
+      weddingRole: guest.weddingRole ?? "none",
     });
     setFormOpen(true);
     setError("");
@@ -212,7 +216,7 @@ function App() {
           <div className="table-scroll">
             <table>
               <thead>
-                <tr><th>INVITADO</th><th>INVITADO POR</th><th>ACOMPAÑANTE</th><th>SEXO</th><th>CONFIRMACIÓN</th><th><span className="visually-hidden">Acciones</span></th></tr>
+                <tr><th>INVITADO</th><th>INVITADO POR</th><th>ACOMPAÑANTE</th><th>SEXO</th><th>ROL EN LA BODA</th><th>CONFIRMACIÓN</th><th><span className="visually-hidden">Acciones</span></th></tr>
               </thead>
               <tbody>
                 {filteredGuests.map((guest) => (
@@ -223,6 +227,7 @@ function App() {
                     <td className="muted-cell">{guest.invitedBy || "—"}</td>
                     <td className="muted-cell">{guest.hasPlusOne ? guest.plusOneName || "Sí, sin nombre aún" : "—"}</td>
                     <td className="muted-cell">{genderLabels[guest.gender]}</td>
+                    <td className="muted-cell">{guest.weddingRole === "bestMan" ? "Best man" : guest.weddingRole === "bridesmaid" ? "Bridesmaid" : "—"}</td>
                     <td><span className={`status ${guest.symbolicInvitation ? "status-symbolic" : guest.confirmed ? "status-confirmed" : "status-pending"}`}><i />{guest.symbolicInvitation ? "Simbólica · no asistirá" : guest.confirmed ? "Confirmado" : "Pendiente"}</span></td>
                     <td className="row-actions">
                       <button onClick={() => openEditForm(guest)} aria-label={`Editar a ${guest.firstName}`} title="Editar">Editar</button>
@@ -253,6 +258,11 @@ function App() {
                 <label className="full-width">Sexo
                   <select value={form.gender} onChange={(event) => setForm({ ...form, gender: event.target.value as Gender })}>
                     <option value="female">Mujer</option><option value="male">Hombre</option><option value="other">Otro</option><option value="undisclosed">Prefiero no decir</option>
+                  </select>
+                </label>
+                <label className="full-width">Rol en la boda
+                  <select value={form.weddingRole} onChange={(event) => setForm({ ...form, weddingRole: event.target.value as WeddingRole })}>
+                    <option value="none">Sin rol especial</option><option value="bestMan">Best man</option><option value="bridesmaid">Bridesmaid</option>
                   </select>
                 </label>
                 <label className="check-option full-width">

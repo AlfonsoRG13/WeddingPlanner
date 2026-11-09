@@ -23,6 +23,7 @@ try {
     ...guest,
     symbolicInvitation: guest.symbolicInvitation ?? false,
     isChild: guest.isChild ?? false,
+    weddingRole: guest.weddingRole ?? "none",
   }));
 } catch (error) {
   if (error.code === "ENOENT") {
@@ -57,6 +58,7 @@ async function readRequestBody(request) {
 
 function validateGuest(value) {
   const genders = ["female", "male", "other", "undisclosed"];
+  const weddingRoles = ["none", "bestMan", "bridesmaid"];
   return value !== null
     && typeof value === "object"
     && typeof value.firstName === "string"
@@ -69,6 +71,7 @@ function validateGuest(value) {
     && typeof value.confirmed === "boolean"
     && typeof value.symbolicInvitation === "boolean"
     && typeof value.isChild === "boolean"
+    && weddingRoles.includes(value.weddingRole)
     && genders.includes(value.gender);
 }
 
