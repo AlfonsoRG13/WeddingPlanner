@@ -4,16 +4,19 @@ Este documento describe la arquitectura y el comportamiento implementado. Debe a
 
 ## Alcance actual
 
-La aplicación es un organizador de boda local. La sección implementada administra invitados; otras secciones, como mesas, fotos y cotizaciones, quedan para futuras ampliaciones.
+La aplicación es un organizador de boda local. Las secciones implementadas administran invitados y gastos; otras secciones, como mesas y fotos, quedan para futuras ampliaciones.
 
 La interfaz permite:
 
 - Agregar, editar y eliminar invitados.
 - Buscar por nombre, apellidos, persona que invitó y nombre del acompañante.
-- Filtrar por todos, confirmados, pendientes e invitaciones simbólicas.
+- Filtrar por todos, confirmados, pendientes, invitaciones simbólicas y por rol especial (Best man o Bridesmaid).
 - Ver el total de invitados, confirmaciones y personas con acompañante.
 - Marcar a una persona como niño/a y registrar invitaciones simbólicas.
 - Asignar un rol de boda: ninguno, Best man o Bridesmaid.
+- Administrar conceptos de gastos, encargados y teléfonos de contacto.
+- Calcular conceptos por persona usando la cantidad de registros de invitados; el total se actualiza al cambiar la lista.
+- Registrar y eliminar pagos, y consultar el costo total de la boda, el acumulado pagado y el saldo pendiente.
 
 ## Tecnologías
 
@@ -29,11 +32,13 @@ No se requiere una base de datos ni un servicio externo. El aspecto visual utili
 ```text
 .
 ├── data/
-│   └── guests.json       # Datos locales; excluido de Git
+│   ├── guests.json       # Datos locales; excluido de Git
+│   └── expenses.json     # Gastos y pagos locales; excluido de Git
 ├── docs/
 │   └── technical.md      # Esta documentación
 ├── src/
 │   ├── App.tsx           # Interfaz, estado y operaciones de invitados
+│   ├── ExpensesSection.tsx # Interfaz y operaciones de conceptos y pagos
 │   ├── main.tsx          # Entrada de React
 │   └── styles.css        # Estilos adaptables
 ├── Iniciar.bat           # Lanzador para Windows
@@ -75,13 +80,40 @@ Valores permitidos:
 
 Una invitación simbólica se registra sin asistencia: al guardar, `confirmed` queda en `false`. Si no hay acompañante, el nombre se guarda como una cadena vacía.
 
+### Modelo de gastos
+
+`data/expenses.json` contiene un arreglo de conceptos. Cada concepto incluye:
+
+```json
+{
+  "id": "UUID generado por el servidor",
+  "concept": "Banquete",
+  "responsible": "Proveedor o encargado",
+  "phone": "Teléfono de contacto",
+  "pricePerPerson": 1250,
+  "fixedAmount": 0,
+  "payments": [
+    {
+      "id": "UUID generado por el servidor",
+      "amount": 5000,
+      "date": "2026-11-09",
+      "note": "Anticipo"
+    }
+  ]
+}
+```
+
+`responsible` y `phone` pueden quedar vacíos. `pricePerPerson` es `null` cuando el precio por persona no aplica; en ese caso `fixedAmount` guarda el total capturado manualmente. Cuando hay precio por persona, el total se calcula como `pricePerPerson × cantidad de registros de invitados` y `fixedAmount` se guarda como cero. Cada registro de invitado cuenta una vez, incluso si tiene acompañante, está pendiente o tiene invitación simbólica. El importe calculado se actualiza al cambiar la lista de invitados. Los importes se presentan en pesos mexicanos (MXN).
+
+Los pagos tienen un importe positivo, fecha ISO `AAAA-MM-DD` y nota opcional. El total pagado de un concepto es la suma de sus pagos; el pendiente es `max(total del concepto − pagos, 0)`. Si se modifica el número de invitados y el concepto queda pagado por encima del total recalculado, la diferencia se muestra como “Pagado de más”. Los totales globales suman todos los conceptos y pagos.
+
 ### Persistencia y compatibilidad
 
 El servidor carga el archivo al iniciar y conserva la lista en memoria durante su ejecución. Cada alta, edición o eliminación escribe la lista completa en un archivo temporal y luego lo renombra sobre `guests.json`, reduciendo la posibilidad de dejar un archivo parcialmente escrito.
 
-Si el archivo todavía no existe, el servidor crea `data/guests.json` con una lista vacía. Al cargar registros antiguos, completa los campos incorporados posteriormente (`symbolicInvitation`, `isChild` y `weddingRole`) con `false`, `false` y `none`, respectivamente.
+Si los archivos todavía no existen, el servidor crea `data/guests.json` y `data/expenses.json` con listas vacías. Al cargar registros antiguos de invitados, completa los campos incorporados posteriormente (`symbolicInvitation`, `isChild` y `weddingRole`) con `false`, `false` y `none`, respectivamente.
 
-Los datos son locales a la computadora y al directorio del proyecto. No se sincronizan entre dispositivos. Para respaldarlos, copia `data/guests.json` con el servidor detenido. El archivo está excluido de Git porque contiene datos personales.
+Los datos son locales a la computadora y al directorio del proyecto. No se sincronizan entre dispositivos. Para respaldarlos, copia `data/guests.json` y `data/expenses.json` con el servidor detenido. Ambos archivos están excluidos de Git porque pueden contener información personal.
 
 ## API local
 
@@ -93,6 +125,12 @@ El cliente y el servidor se comunican mediante JSON:
 | `POST` | `/api/guests` | Valida y agrega un invitado; responde `201` |
 | `PUT` | `/api/guests/:id` | Valida y reemplaza los datos del invitado |
 | `DELETE` | `/api/guests/:id` | Elimina el invitado; responde `204` |
+| `GET` | `/api/expenses` | Devuelve todos los conceptos y pagos |
+| `POST` | `/api/expenses` | Valida y agrega un concepto sin pagos |
+| `PUT` | `/api/expenses/:id` | Actualiza los datos del concepto y conserva sus pagos |
+| `DELETE` | `/api/expenses/:id` | Elimina el concepto y sus pagos |
+| `POST` | `/api/expenses/:id/payments` | Valida y agrega un pago |
+| `DELETE` | `/api/expenses/:id/payments/:paymentId` | Elimina un pago existente |
 
 Las rutas para un identificador inexistente responden `404`; los datos que no cumplen el esquema responden `400`. Los cuerpos de solicitud tienen un máximo de 1 MB.
 

@@ -1,6 +1,6 @@
 # Nuestro día
 
-Organizador local de boda, creado con React y TypeScript. La sección inicial permite administrar invitados, sus acompañantes, asistencia, invitaciones simbólicas, si son niños y sus roles de boda (Best man o Bridesmaid).
+Organizador local de boda, creado con React y TypeScript. Permite administrar invitados y sus roles de boda, y llevar los conceptos de gastos y pagos.
 
 ## Requisitos
 
@@ -29,7 +29,7 @@ npm start
 
 La versión de producción queda disponible en `http://127.0.0.1:4173`.
 
-Los invitados se guardan en `data/guests.json` en la computadora donde se ejecuta el servidor. El servidor escucha únicamente en la interfaz local. Haz una copia de ese archivo para respaldar la lista; no se incluye en Git para evitar publicar datos personales.
+Los invitados y gastos se guardan localmente en `data/guests.json` y `data/expenses.json`. El servidor escucha únicamente en la interfaz local. Haz una copia de ambos archivos para respaldar los datos; no se incluyen en Git para evitar publicar información personal.
 
 ## Documentación técnica
 

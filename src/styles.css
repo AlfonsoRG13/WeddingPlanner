@@ -23,6 +23,10 @@ button { cursor: pointer; }
 .topbar { height: 77px; border-bottom: 1px solid #e8e5dc; display: flex; align-items: center; justify-content: space-between; }
 .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font-size: 11px; letter-spacing: 2px; font-weight: 700; }
 .brand-mark { width: 30px; height: 30px; border: 1px solid #b5bea9; border-radius: 50%; display: grid; place-items: center; color: #74856d; font: italic 19px "Playfair Display", serif; letter-spacing: 0; }
+.main-nav { align-self: stretch; display: flex; gap: 20px; }
+.main-nav button { position: relative; border: 0; padding: 0 3px; background: transparent; color: #878b80; font-size: 11px; }
+.main-nav button.active { color: #465340; font-weight: 600; }
+.main-nav button.active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: #74856d; content: ""; }
 .topbar-note, .eyebrow, .overview-label { font-size: 9px; font-weight: 700; letter-spacing: 1.65px; color: var(--muted); }
 .welcome { position: relative; padding: 55px 0 39px; overflow: hidden; }
 .eyebrow { display: flex; align-items: center; gap: 9px; }
@@ -105,10 +109,61 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
 .form-actions { display: flex; justify-content: flex-end; gap: 9px; border-top: 1px solid #efede6; margin-top: 20px; padding-top: 17px; }
 .button-text { background: transparent; color: #808579; }
 .button:disabled { opacity: .65; cursor: wait; transform: none; }
+.expenses-page { padding-top: 26px; }
+.expenses-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+.expenses-heading h2 { margin: 10px 0 6px; color: #394236; font: 400 clamp(27px, 4vw, 35px) "Playfair Display", Georgia, serif; }
+.expenses-heading h2 em { color: #87947c; font-weight: 400; }
+.expenses-heading p { margin: 0; color: #878b80; font-size: 11px; }
+.expense-summary { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 22px; background: #eeefe8; border-radius: 3px; }
+.expense-summary > div { display: flex; min-height: 100px; flex-direction: column; justify-content: center; gap: 5px; padding: 17px 23px; }
+.expense-summary > div + div { border-left: 1px solid #d9ddd2; }
+.expense-summary span, .expense-totals span { color: #81877b; font-size: 8px; font-weight: 600; letter-spacing: 1px; }
+.expense-summary strong { color: #414b3c; font: 400 25px "Playfair Display", Georgia, serif; }
+.expense-summary small { color: #92958b; font-size: 9px; }
+.expense-empty { display: flex; min-height: 230px; flex-direction: column; align-items: center; justify-content: center; padding: 30px; background: var(--paper); border: 1px solid #eeece5; text-align: center; }
+.expense-empty h3 { margin: 9px 0 5px; color: #495344; font: 400 20px "Playfair Display", Georgia, serif; }
+.expense-empty p { margin: 0 0 16px; color: #909388; font-size: 10px; }
+.expense-list { display: flex; flex-direction: column; gap: 14px; }
+.expense-card { background: var(--paper); border: 1px solid #eeece5; border-radius: 3px; }
+.expense-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 20px 23px 15px; }
+.expense-card-heading .eyebrow { color: #96988e; font-size: 8px; }
+.expense-card-heading h3 { margin: 5px 0 6px; color: #465043; font: 400 21px "Playfair Display", Georgia, serif; }
+.expense-contact { display: flex; gap: 14px; color: #858980; font-size: 10px; }
+.expense-contact a { color: #74856d; text-decoration: none; }
+.expense-actions { display: flex; gap: 10px; }
+.expense-actions button, .payment-list button { border: 0; background: transparent; color: #76816e; font-size: 9px; }
+.expense-actions button + button, .payment-list button { color: #ad7771; }
+.per-person-note { padding: 0 23px 11px; color: #8c9283; font-size: 9px; }
+.expense-totals { display: flex; flex-wrap: wrap; border-top: 1px solid #f0eee8; border-bottom: 1px solid #f0eee8; background: #faf9f5; }
+.expense-totals > div { display: flex; flex: 1; min-width: 130px; flex-direction: column; gap: 5px; padding: 13px 20px; }
+.expense-totals > div + div { border-left: 1px solid #efede6; }
+.expense-totals strong { color: #4a5446; font-size: 13px; font-weight: 600; }
+.expense-totals .overpaid-note strong { color: #a56d62; }
+.payments-section { padding: 14px 23px 17px; }
+.payments-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.payments-heading h4 { margin: 0; color: #56604f; font: 400 16px "Playfair Display", Georgia, serif; }
+.payments-heading h4 span { display: inline-grid; width: 19px; height: 19px; place-items: center; margin-left: 4px; border-radius: 50%; background: #f0f1eb; color: #75816d; font: 9px "Segoe UI", Arial, sans-serif; vertical-align: 2px; }
+.payments-heading .button { padding: 8px 11px; font-size: 9px; }
+.payment-list { margin: 10px 0 0; padding: 0; list-style: none; }
+.payment-list li { display: grid; grid-template-columns: 90px 1fr auto auto; align-items: center; gap: 13px; min-height: 36px; border-top: 1px solid #f0eee8; font-size: 10px; }
+.payment-date { color: #898d82; }
+.payment-note { color: #687063; }
+.payment-list strong { color: #52604d; font-size: 11px; }
+.payment-list button { padding: 5px; }
+.no-payments { margin: 10px 0 0; color: #9a9c92; font-size: 10px; }
+.payment-form { display: flex; align-items: flex-end; gap: 10px; margin-top: 13px; padding-top: 13px; border-top: 1px solid #f0eee8; }
+.payment-form label { display: flex; flex: 1; min-width: 100px; flex-direction: column; gap: 5px; color: #687063; font-size: 9px; }
+.payment-form input { width: 100%; height: 34px; border: 1px solid #e8e6de; padding: 0 8px; color: #40493d; font-size: 10px; }
+.payment-form .payment-note-input { flex: 1.5; }
+.payment-form .button { padding: 10px 12px; white-space: nowrap; font-size: 10px; }
+.field-help { color: #92958b; font-size: 9px; line-height: 1.4; }
+.expense-modal { width: min(100%, 520px); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 720px) {
   .page-shell { padding: 0 20px; }
+  .topbar { gap: 12px; }
+  .main-nav { gap: 12px; }
   .welcome { padding-top: 42px; }
   .welcome-flower { right: 3px; top: 80px; opacity: .6; font-size: 70px; }
   .overview { flex-wrap: wrap; gap: 13px 20px; }
@@ -122,6 +177,14 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
   .search-box { flex: 1; }
   th:first-child, td:first-child { padding-left: 18px; }
   .topbar-note { font-size: 8px; }
+  .expenses-heading { align-items: flex-start; }
+  .expenses-heading .button { flex: 0 0 auto; }
+  .expense-card-heading { padding-right: 17px; padding-left: 17px; }
+  .expense-totals > div { min-width: 110px; padding-right: 13px; padding-left: 13px; }
+  .payments-section { padding-right: 17px; padding-left: 17px; }
+  .payment-form { flex-wrap: wrap; }
+  .payment-form .payment-note-input { flex: 1 1 45%; }
+  .payment-form > .button { margin-left: auto; }
 }
 @media (max-width: 460px) {
   body { min-width: 320px; }
@@ -135,4 +198,19 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
   .overview > .button { margin: 0; }
   .guest-modal { padding: 21px 18px; }
   .form-grid { gap: 12px 9px; }
+  .topbar { flex-wrap: wrap; height: auto; min-height: 72px; padding: 10px 0; }
+  .topbar-note { display: none; }
+  .main-nav { height: 42px; }
+  .expenses-heading { flex-direction: column; gap: 13px; }
+  .expense-summary > div { min-height: 87px; padding: 12px 10px; }
+  .expense-summary strong { font-size: 18px; }
+  .expense-summary span { font-size: 7px; letter-spacing: .6px; }
+  .expense-card-heading { align-items: flex-start; }
+  .expense-contact { flex-direction: column; gap: 4px; }
+  .expense-totals > div { min-width: 50%; }
+  .expense-totals > div:nth-child(3) { border-left: 0; }
+  .payment-list li { grid-template-columns: 73px 1fr auto; gap: 8px; }
+  .payment-list button { grid-column: 3; }
+  .payment-form label { min-width: 42%; }
+  .payment-form .payment-note-input { flex: 1 1 100%; }
 }

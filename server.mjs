@@ -8,6 +8,7 @@ import { createServer as createViteServer } from "vite";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const dataDirectory = path.join(root, "data");
 const dataFile = path.join(dataDirectory, "guests.json");
+const expensesFile = path.join(dataDirectory, "expenses.json");
 const production = process.argv.includes("--production");
 const port = Number(process.env.PORT) || (production ? 4173 : 5173);
 
@@ -34,10 +35,31 @@ try {
   }
 }
 
+let expenses;
+try {
+  expenses = JSON.parse(await readFile(expensesFile, "utf8"));
+  if (!Array.isArray(expenses)) {
+    throw new Error("El archivo de gastos debe contener una lista JSON.");
+  }
+} catch (error) {
+  if (error.code === "ENOENT") {
+    expenses = [];
+    await writeFile(expensesFile, "[]\n", "utf8");
+  } else {
+    throw new Error(`No se pudo leer ${expensesFile}: ${error.message}`, { cause: error });
+  }
+}
+
 async function saveGuests() {
   const temporaryFile = `${dataFile}.tmp`;
   await writeFile(temporaryFile, `${JSON.stringify(guests, null, 2)}\n`, "utf8");
   await rename(temporaryFile, dataFile);
+}
+
+async function saveExpenses(nextExpenses = expenses) {
+  const temporaryFile = `${expensesFile}.tmp`;
+  await writeFile(temporaryFile, `${JSON.stringify(nextExpenses, null, 2)}\n`, "utf8");
+  await rename(temporaryFile, expensesFile);
 }
 
 function sendJson(response, status, body) {
@@ -75,6 +97,37 @@ function validateGuest(value) {
     && genders.includes(value.gender);
 }
 
+function validateExpense(value) {
+  return value !== null
+    && typeof value === "object"
+    && typeof value.concept === "string"
+    && value.concept.trim().length > 0
+    && typeof value.responsible === "string"
+    && typeof value.phone === "string"
+    && (value.pricePerPerson === null
+      || (typeof value.pricePerPerson === "number" && Number.isFinite(value.pricePerPerson) && value.pricePerPerson >= 0))
+    && typeof value.fixedAmount === "number"
+    && Number.isFinite(value.fixedAmount)
+    && value.fixedAmount >= 0;
+}
+
+function validatePayment(value) {
+  const parsedDate = typeof value?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.date)
+    ? new Date(`${value.date}T00:00:00Z`)
+    : null;
+  return value !== null
+    && typeof value === "object"
+    && typeof value.amount === "number"
+    && Number.isFinite(value.amount)
+    && value.amount > 0
+    && typeof value.date === "string"
+    && /^\d{4}-\d{2}-\d{2}$/.test(value.date)
+    && parsedDate !== null
+    && !Number.isNaN(parsedDate.getTime())
+    && parsedDate.toISOString().slice(0, 10) === value.date
+    && typeof value.note === "string";
+}
+
 async function handleApi(request, response, url) {
   if (url.pathname === "/api/guests" && request.method === "GET") {
     sendJson(response, 200, guests);
@@ -92,6 +145,103 @@ async function handleApi(request, response, url) {
     await saveGuests();
     sendJson(response, 201, guest);
     return;
+  }
+
+  if (url.pathname === "/api/expenses" && request.method === "GET") {
+    sendJson(response, 200, expenses);
+    return;
+  }
+
+  if (url.pathname === "/api/expenses" && request.method === "POST") {
+    const body = await readRequestBody(request);
+    if (!validateExpense(body)) {
+      sendJson(response, 400, { error: "Revisa los datos del concepto e inténtalo de nuevo." });
+      return;
+    }
+    const expense = { ...body, id: randomUUID(), payments: [] };
+    const nextExpenses = [...expenses, expense];
+    await saveExpenses(nextExpenses);
+    expenses = nextExpenses;
+    sendJson(response, 201, expense);
+    return;
+  }
+
+  const paymentMatch = url.pathname.match(/^\/api\/expenses\/([^/]+)\/payments(?:\/([^/]+))?$/);
+  if (paymentMatch) {
+    const expenseId = decodeURIComponent(paymentMatch[1]);
+    const expenseIndex = expenses.findIndex((expense) => expense.id === expenseId);
+    if (expenseIndex < 0) {
+      sendJson(response, 404, { error: "No se encontró ese concepto de gasto." });
+      return;
+    }
+
+    if (!paymentMatch[2] && request.method === "POST") {
+      const body = await readRequestBody(request);
+      if (!validatePayment(body)) {
+        sendJson(response, 400, { error: "Revisa el importe, la fecha y la nota del pago." });
+        return;
+      }
+      const payment = { ...body, id: randomUUID() };
+      const currentExpense = expenses[expenseIndex];
+      const nextExpenses = expenses.map((expense, index) => index === expenseIndex
+        ? { ...expense, payments: [...expense.payments, payment] }
+        : expense);
+      await saveExpenses(nextExpenses);
+      expenses = nextExpenses;
+      sendJson(response, 201, payment);
+      return;
+    }
+
+    if (paymentMatch[2] && request.method === "DELETE") {
+      const paymentId = decodeURIComponent(paymentMatch[2]);
+      const paymentIndex = expenses[expenseIndex].payments.findIndex((payment) => payment.id === paymentId);
+      if (paymentIndex < 0) {
+        sendJson(response, 404, { error: "No se encontró ese pago." });
+        return;
+      }
+      const currentExpense = expenses[expenseIndex];
+      const nextExpenses = expenses.map((expense, index) => index === expenseIndex
+        ? { ...expense, payments: expense.payments.filter((payment) => payment.id !== paymentId) }
+        : expense);
+      await saveExpenses(nextExpenses);
+      expenses = nextExpenses;
+      response.writeHead(204);
+      response.end();
+      return;
+    }
+  }
+
+  const expenseMatch = url.pathname.match(/^\/api\/expenses\/([^/]+)$/);
+  if (expenseMatch) {
+    const id = decodeURIComponent(expenseMatch[1]);
+    const index = expenses.findIndex((expense) => expense.id === id);
+    if (index < 0) {
+      sendJson(response, 404, { error: "No se encontró ese concepto de gasto." });
+      return;
+    }
+
+    if (request.method === "PUT") {
+      const body = await readRequestBody(request);
+      if (!validateExpense(body)) {
+        sendJson(response, 400, { error: "Revisa los datos del concepto e inténtalo de nuevo." });
+        return;
+      }
+      const updatedExpense = { ...body, id, payments: expenses[index].payments };
+      const nextExpenses = expenses.map((expense, expenseIndex) => expenseIndex === index ? updatedExpense : expense);
+      await saveExpenses(nextExpenses);
+      expenses = nextExpenses;
+      sendJson(response, 200, updatedExpense);
+      return;
+    }
+
+    if (request.method === "DELETE") {
+      const nextExpenses = expenses.filter((expense) => expense.id !== id);
+      await saveExpenses(nextExpenses);
+      expenses = nextExpenses;
+      response.writeHead(204);
+      response.end();
+      return;
+    }
   }
 
   const match = url.pathname.match(/^\/api\/guests\/([^/]+)$/);

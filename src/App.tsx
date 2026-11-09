@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import ExpensesSection from "./ExpensesSection";
 
 type Gender = "female" | "male" | "other" | "undisclosed";
 type WeddingRole = "none" | "bestMan" | "bridesmaid";
@@ -50,11 +51,13 @@ const genderLabels: Record<Gender, string> = {
 };
 
 function App() {
+  const [activeSection, setActiveSection] = useState<"guests" | "expenses">("guests");
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [guestLoadError, setGuestLoadError] = useState("");
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "symbolic">("all");
+  const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "symbolic" | "bestMan" | "bridesmaid">("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
   const [form, setForm] = useState<GuestForm>(emptyForm);
@@ -63,7 +66,10 @@ function App() {
   useEffect(() => {
     request<Guest[]>("/api/guests")
       .then(setGuests)
-      .catch((cause: Error) => setError(cause.message))
+      .catch((cause: Error) => {
+        setError(cause.message);
+        setGuestLoadError(cause.message);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -73,7 +79,9 @@ function App() {
       const matchesFilter = filter === "all"
         || (filter === "confirmed" && guest.confirmed)
         || (filter === "pending" && !guest.confirmed && !guest.symbolicInvitation)
-        || (filter === "symbolic" && guest.symbolicInvitation);
+        || (filter === "symbolic" && guest.symbolicInvitation)
+        || (filter === "bestMan" && guest.weddingRole === "bestMan")
+        || (filter === "bridesmaid" && guest.weddingRole === "bridesmaid");
       const searchable = [guest.firstName, guest.lastName, guest.invitedBy, guest.plusOneName]
         .join(" ")
         .toLocaleLowerCase("es");
@@ -156,6 +164,10 @@ function App() {
           <span className="brand-mark">N</span>
           <span>NUESTRO DÍA</span>
         </a>
+        <nav className="main-nav" aria-label="Secciones">
+          <button className={activeSection === "guests" ? "active" : ""} onClick={() => setActiveSection("guests")}>Invitados</button>
+          <button className={activeSection === "expenses" ? "active" : ""} onClick={() => setActiveSection("expenses")}>Gastos</button>
+        </nav>
         <span className="topbar-note">EL COMIENZO DE ALGO BONITO</span>
       </header>
 
@@ -166,6 +178,8 @@ function App() {
         <div className="welcome-flower" aria-hidden="true">✳</div>
       </section>
 
+      {activeSection === "guests" ? (
+      <>
       <section className="overview" aria-label="Resumen de invitados">
         <div className="overview-label">LISTA DE INVITADOS</div>
         <div className="overview-stats">
@@ -198,6 +212,8 @@ function App() {
                 <option value="confirmed">Confirmados</option>
                 <option value="pending">Pendientes</option>
                 <option value="symbolic">Invitaciones simbólicas</option>
+                <option value="bestMan">Best man</option>
+                <option value="bridesmaid">Bridesmaid</option>
               </select>
             </label>
           </div>
@@ -239,9 +255,8 @@ function App() {
             </table>
           </div>
         )}
-        {!loading && filteredGuests.length > 0 && <div className="table-footer">Mostrando {filteredGuests.length} de {guests.length} invitados</div>}
+        {!loading && filteredGuests.length > 0 &&         <div className="table-footer">Mostrando {filteredGuests.length} de {guests.length} invitados</div>}
       </section>
-      <footer className="footer-note">HECHO CON CARIÑO, PARA UN DÍA INOLVIDABLE <span>✳</span></footer>
 
       {formOpen && (
         <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setFormOpen(false); }}>
@@ -291,6 +306,11 @@ function App() {
           </section>
         </div>
       )}
+      </>
+      ) : (
+        <ExpensesSection guestCount={guests.length} guestCountLoading={loading} guestCountError={guestLoadError} />
+      )}
+      <footer className="footer-note">HECHO CON CARIÑO, PARA UN DÍA INOLVIDABLE <span>✳</span></footer>
     </main>
   );
 }
