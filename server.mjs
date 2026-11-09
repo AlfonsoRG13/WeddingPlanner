@@ -19,6 +19,11 @@ try {
   if (!Array.isArray(guests)) {
     throw new Error("El archivo de invitados debe contener una lista JSON.");
   }
+  guests = guests.map((guest) => ({
+    ...guest,
+    symbolicInvitation: guest.symbolicInvitation ?? false,
+    isChild: guest.isChild ?? false,
+  }));
 } catch (error) {
   if (error.code === "ENOENT") {
     guests = [];
@@ -62,6 +67,8 @@ function validateGuest(value) {
     && typeof value.hasPlusOne === "boolean"
     && typeof value.plusOneName === "string"
     && typeof value.confirmed === "boolean"
+    && typeof value.symbolicInvitation === "boolean"
+    && typeof value.isChild === "boolean"
     && genders.includes(value.gender);
 }
 

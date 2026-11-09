@@ -9,6 +9,8 @@ type Guest = {
   hasPlusOne: boolean;
   plusOneName: string;
   confirmed: boolean;
+  symbolicInvitation: boolean;
+  isChild: boolean;
   gender: Gender;
 };
 type GuestForm = Omit<Guest, "id">;
@@ -20,6 +22,8 @@ const emptyForm: GuestForm = {
   hasPlusOne: false,
   plusOneName: "",
   confirmed: false,
+  symbolicInvitation: false,
+  isChild: false,
   gender: "undisclosed",
 };
 
@@ -47,7 +51,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "confirmed" | "pending">("all");
+  const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "symbolic">("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
   const [form, setForm] = useState<GuestForm>(emptyForm);
@@ -63,7 +67,10 @@ function App() {
   const filteredGuests = useMemo(() => {
     const search = query.trim().toLocaleLowerCase("es");
     return guests.filter((guest) => {
-      const matchesFilter = filter === "all" || guest.confirmed === (filter === "confirmed");
+      const matchesFilter = filter === "all"
+        || (filter === "confirmed" && guest.confirmed)
+        || (filter === "pending" && !guest.confirmed && !guest.symbolicInvitation)
+        || (filter === "symbolic" && guest.symbolicInvitation);
       const searchable = [guest.firstName, guest.lastName, guest.invitedBy, guest.plusOneName]
         .join(" ")
         .toLocaleLowerCase("es");
@@ -90,6 +97,8 @@ function App() {
       hasPlusOne: guest.hasPlusOne,
       plusOneName: guest.plusOneName,
       confirmed: guest.confirmed,
+      symbolicInvitation: guest.symbolicInvitation,
+      isChild: guest.isChild,
       gender: guest.gender,
     });
     setFormOpen(true);
@@ -105,7 +114,11 @@ function App() {
         editingGuest ? `/api/guests/${encodeURIComponent(editingGuest.id)}` : "/api/guests",
         {
           method: editingGuest ? "PUT" : "POST",
-          body: JSON.stringify({ ...form, plusOneName: form.hasPlusOne ? form.plusOneName.trim() : "" }),
+          body: JSON.stringify({
+            ...form,
+            plusOneName: form.hasPlusOne ? form.plusOneName.trim() : "",
+            confirmed: form.symbolicInvitation ? false : form.confirmed,
+          }),
         },
       );
       setGuests((current) => editingGuest
@@ -180,6 +193,7 @@ function App() {
                 <option value="all">Todos</option>
                 <option value="confirmed">Confirmados</option>
                 <option value="pending">Pendientes</option>
+                <option value="symbolic">Invitaciones simbólicas</option>
               </select>
             </label>
           </div>
@@ -204,12 +218,12 @@ function App() {
                 {filteredGuests.map((guest) => (
                   <tr key={guest.id}>
                     <td>
-                      <div className="guest-name"><span className="avatar">{guest.firstName.charAt(0).toLocaleUpperCase("es")}</span><span>{guest.firstName} {guest.lastName}</span></div>
+                      <div className="guest-name"><span className="avatar">{guest.firstName.charAt(0).toLocaleUpperCase("es")}</span><span>{guest.firstName} {guest.lastName}</span>{guest.isChild && <span className="child-tag">Niño/a</span>}</div>
                     </td>
                     <td className="muted-cell">{guest.invitedBy || "—"}</td>
                     <td className="muted-cell">{guest.hasPlusOne ? guest.plusOneName || "Sí, sin nombre aún" : "—"}</td>
                     <td className="muted-cell">{genderLabels[guest.gender]}</td>
-                    <td><span className={`status ${guest.confirmed ? "status-confirmed" : "status-pending"}`}><i />{guest.confirmed ? "Confirmado" : "Pendiente"}</span></td>
+                    <td><span className={`status ${guest.symbolicInvitation ? "status-symbolic" : guest.confirmed ? "status-confirmed" : "status-pending"}`}><i />{guest.symbolicInvitation ? "Simbólica · no asistirá" : guest.confirmed ? "Confirmado" : "Pendiente"}</span></td>
                     <td className="row-actions">
                       <button onClick={() => openEditForm(guest)} aria-label={`Editar a ${guest.firstName}`} title="Editar">Editar</button>
                       <button onClick={() => void deleteGuest(guest)} aria-label={`Eliminar a ${guest.firstName}`} title="Eliminar">Eliminar</button>
@@ -242,13 +256,21 @@ function App() {
                   </select>
                 </label>
                 <label className="check-option full-width">
+                  <input type="checkbox" checked={form.isChild} onChange={(event) => setForm({ ...form, isChild: event.target.checked })} />
+                  <span><strong>Es niño/a</strong><small>Identifica a los invitados menores de edad.</small></span>
+                </label>
+                <label className="check-option full-width">
                   <input type="checkbox" checked={form.hasPlusOne} onChange={(event) => setForm({ ...form, hasPlusOne: event.target.checked })} />
                   <span><strong>Puede llevar acompañante</strong><small>Podrás anotar su nombre ahora o más adelante.</small></span>
                 </label>
                 {form.hasPlusOne && <label className="full-width">Nombre del acompañante<input value={form.plusOneName} onChange={(event) => setForm({ ...form, plusOneName: event.target.value })} placeholder="Si ya lo sabes" /></label>}
                 <label className="check-option full-width">
-                  <input type="checkbox" checked={form.confirmed} onChange={(event) => setForm({ ...form, confirmed: event.target.checked })} />
+                  <input type="checkbox" checked={form.confirmed} disabled={form.symbolicInvitation} onChange={(event) => setForm({ ...form, confirmed: event.target.checked })} />
                   <span><strong>Asistencia confirmada</strong><small>Marca esta opción cuando haya confirmado su asistencia.</small></span>
+                </label>
+                <label className="check-option full-width">
+                  <input type="checkbox" checked={form.symbolicInvitation} onChange={(event) => setForm({ ...form, symbolicInvitation: event.target.checked, confirmed: event.target.checked ? false : form.confirmed })} />
+                  <span><strong>Invitación simbólica (no asistirá)</strong><small>Registra a esta persona aunque no vaya a asistir.</small></span>
                 </label>
               </div>
               <div className="form-actions">

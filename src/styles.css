@@ -68,6 +68,9 @@ td { padding: 12px 14px; border-top: 1px solid #f0eee8; font-size: 10px; white-s
 .status i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .status-confirmed { background: #edf3eb; color: #6e8967; }
 .status-pending { background: #f5f1e7; color: #a08755; }
+.status-symbolic { background: #f5ece9; color: #9a7169; }
+.status-symbolic i { flex: 0 0 5px; }
+.child-tag { padding: 3px 6px; border-radius: 10px; background: #f0f1eb; color: #78856f; font-size: 8px; font-weight: 500; }
 .row-actions { opacity: 0; transition: opacity .15s ease; text-align: right; }
 tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
 .row-actions button { padding: 4px; border: 0; background: transparent; color: #76816e; font-size: 9px; }
@@ -95,6 +98,7 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
 .full-width { grid-column: 1 / -1; }
 .check-option { display: flex; gap: 10px; align-items: flex-start; padding: 11px 12px; border: 1px solid #eeece5; cursor: pointer; }
 .check-option input { margin: 2px 0 0; accent-color: #697b61; }
+.check-option input:disabled { cursor: not-allowed; }
 .check-option span { display: flex; flex-direction: column; gap: 3px; }
 .check-option strong { color: #596252; font-size: 10px; font-weight: 600; }
 .check-option small { color: #97998f; font-size: 9px; }

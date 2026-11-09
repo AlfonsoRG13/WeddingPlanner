@@ -1,6 +1,6 @@
 # Nuestro día
 
-Organizador local de boda, creado con React y TypeScript. La sección inicial permite administrar invitados y sus acompañantes.
+Organizador local de boda, creado con React y TypeScript. La sección inicial permite administrar invitados, sus acompañantes, asistencia, invitaciones simbólicas y si son niños.
 
 ## Requisitos
 
