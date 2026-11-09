@@ -20,12 +20,20 @@ try {
   if (!Array.isArray(guests)) {
     throw new Error("El archivo de invitados debe contener una lista JSON.");
   }
-  guests = guests.map((guest) => ({
-    ...guest,
-    symbolicInvitation: guest.symbolicInvitation ?? false,
-    isChild: guest.isChild ?? false,
-    weddingRole: guest.weddingRole ?? "none",
-  }));
+  const needsNameMigration = guests.some((guest) => "firstName" in guest || "lastName" in guest);
+  guests = guests.map((guest) => {
+    const { firstName, lastName, ...guestData } = guest;
+    return {
+      ...guestData,
+      name: guest.name ?? [firstName, lastName].filter(Boolean).join(" ").trim(),
+      symbolicInvitation: guest.symbolicInvitation ?? false,
+      isChild: guest.isChild ?? false,
+      weddingRole: guest.weddingRole ?? "none",
+    };
+  });
+  if (needsNameMigration) {
+    await writeFile(dataFile, `${JSON.stringify(guests, null, 2)}\n`, "utf8");
+  }
 } catch (error) {
   if (error.code === "ENOENT") {
     guests = [];
@@ -83,10 +91,8 @@ function validateGuest(value) {
   const weddingRoles = ["none", "bestMan", "bridesmaid"];
   return value !== null
     && typeof value === "object"
-    && typeof value.firstName === "string"
-    && value.firstName.trim().length > 0
-    && typeof value.lastName === "string"
-    && value.lastName.trim().length > 0
+    && typeof value.name === "string"
+    && value.name.trim().length > 0
     && typeof value.invitedBy === "string"
     && typeof value.hasPlusOne === "boolean"
     && typeof value.plusOneName === "string"

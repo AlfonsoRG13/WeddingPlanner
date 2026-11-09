@@ -11,10 +11,11 @@ La interfaz permite:
 - Agregar, editar y eliminar invitados.
 - Buscar por nombre, apellidos, persona que invitó y nombre del acompañante.
 - Filtrar por todos, confirmados, pendientes, invitaciones simbólicas y por rol especial (Best man o Bridesmaid).
-- Ver el total de invitados, confirmaciones y personas con acompañante.
+- Ver el total de invitados asistentes, las invitaciones simbólicas, los niños, las confirmaciones y la cantidad de invitados con acompañante. El total excluye a quienes tienen `symbolicInvitation` o `isChild`; también excluye sus acompañantes. A los demás registros se les suma un acompañante cuando `hasPlusOne` es `true`.
 - Marcar a una persona como niño/a y registrar invitaciones simbólicas.
 - Asignar un rol de boda: ninguno, Best man o Bridesmaid.
 - Administrar conceptos de gastos, encargados y teléfonos de contacto.
+- Buscar gastos por concepto, encargado, teléfono o nota del pago; los conceptos se muestran plegados y se expanden individualmente para consultar pagos y detalles.
 - Calcular conceptos por persona usando la cantidad de registros de invitados; el total se actualiza al cambiar la lista.
 - Registrar y eliminar pagos, y consultar el costo total de la boda, el acumulado pagado y el saldo pendiente.
 
@@ -55,8 +56,7 @@ No se requiere una base de datos ni un servicio externo. El aspecto visual utili
 ```json
 {
   "id": "UUID generado por el servidor",
-  "firstName": "Nombre",
-  "lastName": "Apellidos",
+  "name": "Nombre completo",
   "invitedBy": "Quién lo invitó",
   "hasPlusOne": false,
   "plusOneName": "",
@@ -73,7 +73,8 @@ Valores permitidos:
 | Campo | Tipo / valores |
 |---|---|
 | `id` | Cadena única creada con `crypto.randomUUID()` |
-| `firstName`, `lastName`, `invitedBy`, `plusOneName` | Cadenas; nombre y apellidos son obligatorios |
+| `name` | Cadena obligatoria con el nombre completo del invitado |
+| `invitedBy`, `plusOneName` | Cadenas |
 | `hasPlusOne`, `confirmed`, `symbolicInvitation`, `isChild` | Booleanos |
 | `gender` | `female`, `male`, `other`, `undisclosed` |
 | `weddingRole` | `none`, `bestMan`, `bridesmaid` |
@@ -109,7 +110,7 @@ Los pagos tienen un importe positivo, fecha ISO `AAAA-MM-DD` y nota opcional. El
 
 ### Persistencia y compatibilidad
 
-El servidor carga el archivo al iniciar y conserva la lista en memoria durante su ejecución. Cada alta, edición o eliminación escribe la lista completa en un archivo temporal y luego lo renombra sobre `guests.json`, reduciendo la posibilidad de dejar un archivo parcialmente escrito.
+El servidor carga el archivo al iniciar y conserva la lista en memoria durante su ejecución. Al iniciar, si encuentra `firstName` y `lastName`, combina sus valores en `name` y guarda el formato actualizado. Cada alta, edición o eliminación escribe la lista completa en un archivo temporal y luego lo renombra sobre `guests.json`, reduciendo la posibilidad de dejar un archivo parcialmente escrito.
 
 Si los archivos todavía no existen, el servidor crea `data/guests.json` y `data/expenses.json` con listas vacías. Al cargar registros antiguos de invitados, completa los campos incorporados posteriormente (`symbolicInvitation`, `isChild` y `weddingRole`) con `false`, `false` y `none`, respectivamente.
 

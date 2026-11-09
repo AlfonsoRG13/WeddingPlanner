@@ -65,6 +65,10 @@ function getErrorMessage(cause: unknown) {
   return cause instanceof Error ? cause.message : "Ocurrió un error inesperado.";
 }
 
+function normalizeSearch(value: string) {
+  return value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
+}
+
 type ExpensesSectionProps = {
   guestCount: number;
   guestCountLoading: boolean;
@@ -75,6 +79,8 @@ function ExpensesSection({ guestCount, guestCountLoading, guestCountError }: Exp
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [expandedExpenses, setExpandedExpenses] = useState<Set<string>>(() => new Set());
   const [formOpen, setFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [expenseForm, setExpenseForm] = useState<ExpenseForm>(emptyExpenseForm);
@@ -98,6 +104,16 @@ function ExpensesSection({ guestCount, guestCountLoading, guestCountError }: Exp
     [expenses],
   );
   const totalPending = Math.max(totalCost - totalPaid, 0);
+  const filteredExpenses = useMemo(() => {
+    const search = normalizeSearch(query);
+    if (!search) return expenses;
+    return expenses.filter((expense) => normalizeSearch([
+      expense.concept,
+      expense.responsible,
+      expense.phone,
+      ...expense.payments.map((payment) => payment.note),
+    ].join(" ")).includes(search));
+  }, [expenses, query]);
 
   function openNewExpense() {
     setEditingExpense(null);
@@ -250,80 +266,130 @@ function ExpensesSection({ guestCount, guestCountLoading, guestCountError }: Exp
           <button className="button button-outline" onClick={openNewExpense}>Agregar primer concepto</button>
         </div>
       ) : (
+        <>
+        <div className="expense-search-row">
+          <label className="expense-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar concepto, encargado o pago"
+              aria-label="Buscar gastos"
+            />
+            {query && <button type="button" onClick={() => setQuery("")} aria-label="Limpiar búsqueda">×</button>}
+          </label>
+          <span className="expense-result-count">
+            {filteredExpenses.length} de {expenses.length} conceptos
+          </span>
+        </div>
+        {filteredExpenses.length === 0 ? (
+          <div className="expense-empty expense-no-results">
+            <span className="empty-ornament" aria-hidden="true">⌕</span>
+            <h3>No encontramos gastos</h3>
+            <p>Prueba con otro concepto, encargado, teléfono o nota de pago.</p>
+            <button className="button button-outline" onClick={() => setQuery("")}>Limpiar búsqueda</button>
+          </div>
+        ) : (
         <div className="expense-list">
-          {expenses.map((expense) => {
+          {filteredExpenses.map((expense) => {
             const total = totalFor(expense, guestCount);
             const paid = paidFor(expense);
             const pending = Math.max(total - paid, 0);
             const overpaid = Math.max(paid - total, 0);
+            const expanded = expandedExpenses.has(expense.id);
+            const detailsId = `expense-details-${expense.id}`;
             return (
               <article className="expense-card" key={expense.id}>
                 <div className="expense-card-heading">
-                  <div>
-                    <div className="eyebrow">CONCEPTO</div>
-                    <h3>{expense.concept}</h3>
-                    <div className="expense-contact">
-                      <span>{expense.responsible || "Sin encargado"}</span>
-                      {expense.phone && <a href={`tel:${expense.phone}`}>{expense.phone}</a>}
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    className="expense-toggle"
+                    aria-expanded={expanded}
+                    aria-controls={detailsId}
+                    onClick={() => setExpandedExpenses((current) => {
+                      const next = new Set(current);
+                      if (next.has(expense.id)) next.delete(expense.id);
+                      else next.add(expense.id);
+                      return next;
+                    })}
+                  >
+                    <span className={`expense-chevron${expanded ? " expanded" : ""}`} aria-hidden="true">⌄</span>
+                    <span className="expense-heading-copy">
+                      <span className="eyebrow">CONCEPTO</span>
+                      <span className="expense-title">{expense.concept}</span>
+                      <span className="expense-contact">
+                        <span>{expense.responsible || "Sin encargado"}</span>
+                        {expense.phone && <span>{expense.phone}</span>}
+                      </span>
+                    </span>
+                    <span className="expense-heading-totals">
+                      <span><small>TOTAL</small><strong>{currency.format(total)}</strong></span>
+                      <span><small>PENDIENTE</small><strong>{currency.format(pending)}</strong></span>
+                      <span><small>PAGOS</small><strong>{expense.payments.length}</strong></span>
+                    </span>
+                  </button>
                   <div className="expense-actions">
                     <button onClick={() => openEditExpense(expense)}>Editar</button>
                     <button onClick={() => void deleteExpense(expense)}>Eliminar</button>
                   </div>
                 </div>
-                {expense.pricePerPerson !== null && (
-                  <div className="per-person-note">
-                    {currency.format(expense.pricePerPerson)} por persona × {guestCount} invitados registrados
-                  </div>
-                )}
-                <div className="expense-totals">
-                  <div><span>TOTAL DEL CONCEPTO</span><strong>{currency.format(total)}</strong></div>
-                  <div><span>ACUMULADO PAGADO</span><strong>{currency.format(paid)}</strong></div>
-                  <div><span>PENDIENTE</span><strong>{currency.format(pending)}</strong></div>
-                  {overpaid > 0 && <div className="overpaid-note"><span>PAGADO DE MÁS</span><strong>{currency.format(overpaid)}</strong></div>}
-                </div>
-                <div className="payments-section">
-                  <div className="payments-heading">
-                    <h4>Pagos <span>{expense.payments.length}</span></h4>
-                    <button
-                      className="button button-outline"
-                      onClick={() => {
-                        setPaymentExpenseId(paymentExpenseId === expense.id ? null : expense.id);
-                        setPaymentForm({ amount: "", date: today(), note: "" });
-                        setError("");
-                      }}
-                    >
-                      {paymentExpenseId === expense.id ? "Cancelar" : "＋ Registrar pago"}
-                    </button>
-                  </div>
-                  {expense.payments.length > 0 ? (
-                    <ul className="payment-list">
-                      {expense.payments.map((payment) => (
-                        <li key={payment.id}>
-                          <span className="payment-date">{new Date(`${payment.date}T12:00:00`).toLocaleDateString("es-MX")}</span>
-                          <span className="payment-note">{payment.note || "Pago"}</span>
-                          <strong>{currency.format(payment.amount)}</strong>
-                          <button onClick={() => void deletePayment(expense, payment)} aria-label={`Eliminar pago de ${currency.format(payment.amount)}`}>Eliminar</button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="no-payments">Aún no se han registrado pagos para este concepto.</p>
+                <div id={detailsId} className="expense-details" hidden={!expanded}>
+                  {expense.pricePerPerson !== null && (
+                    <div className="per-person-note">
+                      {currency.format(expense.pricePerPerson)} por persona × {guestCount} invitados registrados
+                    </div>
                   )}
-                  {paymentExpenseId === expense.id && (
-                    <form className="payment-form" onSubmit={(event) => void addPayment(event, expense)}>
-                      <label>Importe<input autoFocus type="number" min="0.01" step="0.01" required value={paymentForm.amount} onChange={(event) => setPaymentForm({ ...paymentForm, amount: event.target.value })} placeholder="0.00" /></label>
-                      <label>Fecha<input type="date" required value={paymentForm.date} onChange={(event) => setPaymentForm({ ...paymentForm, date: event.target.value })} /></label>
-                      <label className="payment-note-input">Nota (opcional)<input value={paymentForm.note} onChange={(event) => setPaymentForm({ ...paymentForm, note: event.target.value })} placeholder="Anticipo, liquidación..." /></label>
-                      <button className="button button-dark" disabled={saving}>{saving ? "Guardando..." : "Guardar pago"}</button>
-                    </form>
-                  )}
+                  <div className="expense-totals">
+                    <div><span>TOTAL DEL CONCEPTO</span><strong>{currency.format(total)}</strong></div>
+                    <div><span>ACUMULADO PAGADO</span><strong>{currency.format(paid)}</strong></div>
+                    <div><span>PENDIENTE</span><strong>{currency.format(pending)}</strong></div>
+                    {overpaid > 0 && <div className="overpaid-note"><span>PAGADO DE MÁS</span><strong>{currency.format(overpaid)}</strong></div>}
+                  </div>
+                  <div className="payments-section">
+                    <div className="payments-heading">
+                      <h4>Pagos <span>{expense.payments.length}</span></h4>
+                      <button
+                        className="button button-outline"
+                        onClick={() => {
+                          setPaymentExpenseId(paymentExpenseId === expense.id ? null : expense.id);
+                          setPaymentForm({ amount: "", date: today(), note: "" });
+                          setError("");
+                        }}
+                      >
+                        {paymentExpenseId === expense.id ? "Cancelar" : "＋ Registrar pago"}
+                      </button>
+                    </div>
+                    {expense.payments.length > 0 ? (
+                      <ul className="payment-list">
+                        {expense.payments.map((payment) => (
+                          <li key={payment.id}>
+                            <span className="payment-date">{new Date(`${payment.date}T12:00:00`).toLocaleDateString("es-MX")}</span>
+                            <span className="payment-note">{payment.note || "Pago"}</span>
+                            <strong>{currency.format(payment.amount)}</strong>
+                            <button onClick={() => void deletePayment(expense, payment)} aria-label={`Eliminar pago de ${currency.format(payment.amount)}`}>Eliminar</button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="no-payments">Aún no se han registrado pagos para este concepto.</p>
+                    )}
+                    {paymentExpenseId === expense.id && (
+                      <form className="payment-form" onSubmit={(event) => void addPayment(event, expense)}>
+                        <label>Importe<input autoFocus type="number" min="0.01" step="0.01" required value={paymentForm.amount} onChange={(event) => setPaymentForm({ ...paymentForm, amount: event.target.value })} placeholder="0.00" /></label>
+                        <label>Fecha<input type="date" required value={paymentForm.date} onChange={(event) => setPaymentForm({ ...paymentForm, date: event.target.value })} /></label>
+                        <label className="payment-note-input">Nota (opcional)<input value={paymentForm.note} onChange={(event) => setPaymentForm({ ...paymentForm, note: event.target.value })} placeholder="Anticipo, liquidación..." /></label>
+                        <button className="button button-dark" disabled={saving}>{saving ? "Guardando..." : "Guardar pago"}</button>
+                      </form>
+                    )}
+                  </div>
                 </div>
               </article>
             );
           })}
         </div>
+        )}
+        </>
       )}
 
       {formOpen && (

@@ -5,8 +5,7 @@ type Gender = "female" | "male" | "other" | "undisclosed";
 type WeddingRole = "none" | "bestMan" | "bridesmaid";
 type Guest = {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   invitedBy: string;
   hasPlusOne: boolean;
   plusOneName: string;
@@ -19,8 +18,7 @@ type Guest = {
 type GuestForm = Omit<Guest, "id">;
 
 const emptyForm: GuestForm = {
-  firstName: "",
-  lastName: "",
+  name: "",
   invitedBy: "",
   hasPlusOne: false,
   plusOneName: "",
@@ -82,7 +80,7 @@ function App() {
         || (filter === "symbolic" && guest.symbolicInvitation)
         || (filter === "bestMan" && guest.weddingRole === "bestMan")
         || (filter === "bridesmaid" && guest.weddingRole === "bridesmaid");
-      const searchable = [guest.firstName, guest.lastName, guest.invitedBy, guest.plusOneName]
+      const searchable = [guest.name, guest.invitedBy, guest.plusOneName]
         .join(" ")
         .toLocaleLowerCase("es");
       return matchesFilter && (!search || searchable.includes(search));
@@ -91,6 +89,10 @@ function App() {
 
   const confirmedCount = guests.filter((guest) => guest.confirmed).length;
   const plusOneCount = guests.filter((guest) => guest.hasPlusOne).length;
+  const symbolicCount = guests.filter((guest) => guest.symbolicInvitation).length;
+  const childrenCount = guests.filter((guest) => guest.isChild).length;
+  const attendingGuests = guests.filter((guest) => !guest.symbolicInvitation && !guest.isChild);
+  const totalInvitees = attendingGuests.length + attendingGuests.filter((guest) => guest.hasPlusOne).length;
 
   function openNewForm() {
     setEditingGuest(null);
@@ -102,8 +104,7 @@ function App() {
   function openEditForm(guest: Guest) {
     setEditingGuest(guest);
     setForm({
-      firstName: guest.firstName,
-      lastName: guest.lastName,
+      name: guest.name,
       invitedBy: guest.invitedBy,
       hasPlusOne: guest.hasPlusOne,
       plusOneName: guest.plusOneName,
@@ -147,7 +148,7 @@ function App() {
   }
 
   async function deleteGuest(guest: Guest) {
-    if (!window.confirm(`¿Eliminar a ${guest.firstName} ${guest.lastName} de la lista?`)) return;
+    if (!window.confirm(`¿Eliminar a ${guest.name} de la lista?`)) return;
     setError("");
     try {
       await request<void>(`/api/guests/${encodeURIComponent(guest.id)}`, { method: "DELETE" });
@@ -183,7 +184,11 @@ function App() {
       <section className="overview" aria-label="Resumen de invitados">
         <div className="overview-label">LISTA DE INVITADOS</div>
         <div className="overview-stats">
-          <div className="stat"><strong>{guests.length}</strong><span>INVITADOS</span></div>
+          <div className="stat"><strong>{totalInvitees}</strong><span>INVITADOS</span></div>
+          <div className="stat-divider" />
+          <div className="stat"><strong>{symbolicCount}</strong><span>SIMBÓLICOS</span></div>
+          <div className="stat-divider" />
+          <div className="stat"><strong>{childrenCount}</strong><span>NIÑOS</span></div>
           <div className="stat-divider" />
           <div className="stat"><strong>{confirmedCount}</strong><span>CONFIRMADOS</span></div>
           <div className="stat-divider" />
@@ -238,7 +243,7 @@ function App() {
                 {filteredGuests.map((guest) => (
                   <tr key={guest.id}>
                     <td>
-                      <div className="guest-name"><span className="avatar">{guest.firstName.charAt(0).toLocaleUpperCase("es")}</span><span>{guest.firstName} {guest.lastName}</span>{guest.isChild && <span className="child-tag">Niño/a</span>}</div>
+                      <div className="guest-name"><span className="avatar">{guest.name.charAt(0).toLocaleUpperCase("es")}</span><span>{guest.name}</span>{guest.isChild && <span className="child-tag">Niño/a</span>}</div>
                     </td>
                     <td className="muted-cell">{guest.invitedBy || "—"}</td>
                     <td className="muted-cell">{guest.hasPlusOne ? guest.plusOneName || "Sí, sin nombre aún" : "—"}</td>
@@ -246,8 +251,8 @@ function App() {
                     <td className="muted-cell">{guest.weddingRole === "bestMan" ? "Best man" : guest.weddingRole === "bridesmaid" ? "Bridesmaid" : "—"}</td>
                     <td><span className={`status ${guest.symbolicInvitation ? "status-symbolic" : guest.confirmed ? "status-confirmed" : "status-pending"}`}><i />{guest.symbolicInvitation ? "Simbólica · no asistirá" : guest.confirmed ? "Confirmado" : "Pendiente"}</span></td>
                     <td className="row-actions">
-                      <button onClick={() => openEditForm(guest)} aria-label={`Editar a ${guest.firstName}`} title="Editar">Editar</button>
-                      <button onClick={() => void deleteGuest(guest)} aria-label={`Eliminar a ${guest.firstName}`} title="Eliminar">Eliminar</button>
+                      <button onClick={() => openEditForm(guest)} aria-label={`Editar a ${guest.name}`} title="Editar">Editar</button>
+                      <button onClick={() => void deleteGuest(guest)} aria-label={`Eliminar a ${guest.name}`} title="Eliminar">Eliminar</button>
                     </td>
                   </tr>
                 ))}
@@ -267,8 +272,7 @@ function App() {
             </div>
             <form onSubmit={saveGuest}>
               <div className="form-grid">
-                <label>Nombre<input autoFocus required value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} placeholder="Nombre" /></label>
-                <label>Apellidos<input required value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} placeholder="Apellidos" /></label>
+                <label className="full-width">Nombre<input autoFocus required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Nombre completo" /></label>
                 <label className="full-width">¿Quién lo invitó?<input value={form.invitedBy} onChange={(event) => setForm({ ...form, invitedBy: event.target.value })} placeholder="Por ejemplo, Ana o la familia López" /></label>
                 <label className="full-width">Sexo
                   <select value={form.gender} onChange={(event) => setForm({ ...form, gender: event.target.value as Gender })}>

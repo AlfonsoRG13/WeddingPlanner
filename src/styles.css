@@ -123,16 +123,33 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
 .expense-empty { display: flex; min-height: 230px; flex-direction: column; align-items: center; justify-content: center; padding: 30px; background: var(--paper); border: 1px solid #eeece5; text-align: center; }
 .expense-empty h3 { margin: 9px 0 5px; color: #495344; font: 400 20px "Playfair Display", Georgia, serif; }
 .expense-empty p { margin: 0 0 16px; color: #909388; font-size: 10px; }
+.expense-search-row { display: flex; align-items: center; gap: 14px; margin-bottom: 13px; }
+.expense-search { display: flex; align-items: center; gap: 9px; width: min(100%, 430px); height: 40px; padding: 0 12px; border: 1px solid var(--line); background: var(--paper); color: #91958b; }
+.expense-search > span { font-size: 20px; line-height: 1; transform: rotate(-20deg); }
+.expense-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 11px; }
+.expense-search input::placeholder { color: #a4a69e; }
+.expense-search > button { border: 0; background: transparent; color: #858980; font-size: 19px; line-height: 1; }
+.expense-result-count { color: #92958b; font-size: 10px; }
 .expense-list { display: flex; flex-direction: column; gap: 14px; }
 .expense-card { background: var(--paper); border: 1px solid #eeece5; border-radius: 3px; }
-.expense-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 20px 23px 15px; }
-.expense-card-heading .eyebrow { color: #96988e; font-size: 8px; }
-.expense-card-heading h3 { margin: 5px 0 6px; color: #465043; font: 400 21px "Playfair Display", Georgia, serif; }
+.expense-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 20px 0 0; }
+.expense-toggle { display: flex; flex: 1; min-width: 0; align-items: center; gap: 14px; border: 0; padding: 16px 0 16px 20px; background: transparent; text-align: left; }
+.expense-toggle:hover .expense-title { color: #788a70; }
+.expense-chevron { flex: 0 0 25px; width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; background: #f0f1eb; color: #788a70; font-size: 17px; line-height: 1; transform: rotate(-90deg); transition: transform .16s ease; }
+.expense-chevron.expanded { transform: rotate(0); }
+.expense-heading-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
+.expense-heading-copy .eyebrow { color: #96988e; font-size: 8px; }
+.expense-title { overflow: hidden; color: #465043; font: 400 19px "Playfair Display", Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
 .expense-contact { display: flex; gap: 14px; color: #858980; font-size: 10px; }
-.expense-contact a { color: #74856d; text-decoration: none; }
+.expense-heading-totals { display: flex; align-items: center; gap: 20px; }
+.expense-heading-totals > span { display: flex; flex-direction: column; gap: 4px; }
+.expense-heading-totals small { color: #92958b; font-size: 7px; letter-spacing: .8px; }
+.expense-heading-totals strong { color: #4a5446; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .expense-actions { display: flex; gap: 10px; }
 .expense-actions button, .payment-list button { border: 0; background: transparent; color: #76816e; font-size: 9px; }
 .expense-actions button + button, .payment-list button { color: #ad7771; }
+.expense-details[hidden] { display: none; }
+.expense-details { border-top: 1px solid #f0eee8; }
 .per-person-note { padding: 0 23px 11px; color: #8c9283; font-size: 9px; }
 .expense-totals { display: flex; flex-wrap: wrap; border-top: 1px solid #f0eee8; border-bottom: 1px solid #f0eee8; background: #faf9f5; }
 .expense-totals > div { display: flex; flex: 1; min-width: 130px; flex-direction: column; gap: 5px; padding: 13px 20px; }
@@ -179,7 +196,11 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
   .topbar-note { font-size: 8px; }
   .expenses-heading { align-items: flex-start; }
   .expenses-heading .button { flex: 0 0 auto; }
-  .expense-card-heading { padding-right: 17px; padding-left: 17px; }
+  .expense-card-heading { padding-right: 13px; }
+  .expense-toggle { gap: 10px; padding-left: 13px; }
+  .expense-heading-totals { gap: 10px; }
+  .expense-heading-totals > span:nth-child(2) { display: none; }
+  .expense-actions { gap: 5px; }
   .expense-totals > div { min-width: 110px; padding-right: 13px; padding-left: 13px; }
   .payments-section { padding-right: 17px; padding-left: 17px; }
   .payment-form { flex-wrap: wrap; }
@@ -202,11 +223,18 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
   .topbar-note { display: none; }
   .main-nav { height: 42px; }
   .expenses-heading { flex-direction: column; gap: 13px; }
+  .expense-search-row { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .expense-search { width: 100%; }
   .expense-summary > div { min-height: 87px; padding: 12px 10px; }
   .expense-summary strong { font-size: 18px; }
   .expense-summary span { font-size: 7px; letter-spacing: .6px; }
-  .expense-card-heading { align-items: flex-start; }
-  .expense-contact { flex-direction: column; gap: 4px; }
+  .expense-card-heading { align-items: center; padding-right: 9px; }
+  .expense-toggle { align-items: flex-start; gap: 7px; padding: 13px 0 13px 10px; }
+  .expense-chevron { flex-basis: 21px; width: 21px; height: 21px; }
+  .expense-title { font-size: 16px; }
+  .expense-contact { flex-direction: column; gap: 3px; }
+  .expense-heading-totals { display: none; }
+  .expense-actions { flex-direction: column; align-items: flex-end; gap: 3px; }
   .expense-totals > div { min-width: 50%; }
   .expense-totals > div:nth-child(3) { border-left: 0; }
   .payment-list li { grid-template-columns: 73px 1fr auto; gap: 8px; }
