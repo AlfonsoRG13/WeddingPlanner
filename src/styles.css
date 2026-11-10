@@ -37,7 +37,8 @@ button { cursor: pointer; }
 .welcome-flower { position: absolute; right: 34px; top: 67px; color: #e7e8df; font-size: 94px; font-weight: 200; transform: rotate(14deg); }
 .overview { min-height: 112px; padding: 22px 25px; background: #eeefe8; display: flex; align-items: center; gap: 31px; border-radius: 3px; }
 .overview-label { align-self: flex-start; margin-top: 6px; color: #737d6d; white-space: nowrap; }
-.overview-stats { display: flex; align-items: center; gap: 25px; flex: 1; }
+.overview-stats { display: flex; align-items: center; gap: 0; flex: 1; }
+.overview-stat-group { display: flex; align-items: center; gap: 25px; }
 .stat { display: flex; flex-direction: column; gap: 3px; min-width: 76px; }
 .stat strong { font: 400 28px/1.1 "Playfair Display", Georgia, serif; color: #414b3c; }
 .stat span { font-size: 8px; letter-spacing: 1px; color: #81877b; }
@@ -187,7 +188,7 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
   .welcome-flower { right: 3px; top: 80px; opacity: .6; font-size: 70px; }
   .overview { flex-wrap: wrap; gap: 13px 20px; }
   .overview-label { flex-basis: 100%; }
-  .overview-stats { gap: 14px; }
+  .overview-stat-group { gap: 14px; }
   .stat { min-width: 65px; }
   .stat strong { font-size: 24px; }
   .overview > .button { margin-left: auto; }
@@ -216,6 +217,7 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
   .welcome p { max-width: 275px; line-height: 1.6; }
   .overview { padding: 17px; }
   .overview-stats { width: 100%; justify-content: space-between; }
+  .overview-stat-group { gap: 8px; }
   .stat { min-width: 0; }
   .stat-divider { height: 26px; }
   .overview > .button { margin: 0; }

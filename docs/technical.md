@@ -38,8 +38,14 @@ No se requiere una base de datos ni un servicio externo. El aspecto visual utili
 ├── docs/
 │   └── technical.md      # Esta documentación
 ├── src/
-│   ├── App.tsx           # Interfaz, estado y operaciones de invitados
-│   ├── ExpensesSection.tsx # Interfaz y operaciones de conceptos y pagos
+│   ├── components/layout/ # Encabezado, bienvenida y pie reutilizables
+│   ├── features/
+│   │   ├── guests/       # Sección de invitados, tipos, opciones y componentes
+│   │   └── expenses/     # Sección de gastos, tipos, cálculos y componentes
+│   ├── shared/
+│   │   ├── api.ts        # Cliente HTTP, normalización de búsqueda y errores
+│   │   └── components/   # Modal y mensajes reutilizables
+│   ├── App.tsx           # Composición de la app y carga compartida de invitados
 │   ├── main.tsx          # Entrada de React
 │   └── styles.css        # Estilos adaptables
 ├── Iniciar.bat           # Lanzador para Windows
@@ -136,6 +142,19 @@ El cliente y el servidor se comunican mediante JSON:
 Las rutas para un identificador inexistente responden `404`; los datos que no cumplen el esquema responden `400`. Los cuerpos de solicitud tienen un máximo de 1 MB.
 
 En desarrollo, el servidor Node integra el middleware de Vite y entrega la aplicación. En producción, sirve los archivos compilados de `dist/`. En ambos casos sirve también la API.
+
+## Organización del frontend
+
+El frontend está organizado por responsabilidad y dominio:
+
+- `App.tsx` mantiene la carga compartida de invitados, la navegación entre secciones y la composición general.
+- `components/layout/` contiene piezas de presentación del shell que se reutilizan entre secciones.
+- `features/guests/` y `features/expenses/` mantienen su propio flujo, tipos, constantes y componentes de interfaz.
+- `features/*/components/` separa formularios, resúmenes, herramientas de búsqueda/listado y tarjetas en componentes React enfocados.
+- `shared/api.ts` centraliza las solicitudes JSON, el formato de errores y la normalización de búsquedas sin distinguir acentos.
+- `shared/components/` contiene elementos de interfaz compartidos, como el diálogo accesible y la alerta de error.
+
+Opciones del formulario, filtros, valores iniciales, rutas API, mensajes y formatos/cálculos comunes se definen en módulos con nombre descriptivo para evitar repetirlos en varios componentes.
 
 ## Ejecución y compilación
 
