@@ -11,7 +11,7 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-Abre `http://127.0.0.1:5173`. En Windows también puedes usar `Iniciar.bat`. En modo local, la aplicación lee y escribe `data/guests.json` y `data/expenses.json`.
+Abre `http://127.0.0.1:5173`. En Windows también puedes usar `Iniciar.bat`: inicia el servidor, abre la aplicación en una ventana dedicada de Edge o Chrome y detiene el servidor al cerrar esa ventana; la consola del lanzador también se cierra. En modo local, la aplicación lee y escribe `data/guests.json` y `data/expenses.json`.
 
 ## Publicar gratis con Render y Supabase
 

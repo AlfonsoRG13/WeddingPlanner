@@ -215,7 +215,7 @@ npm.cmd run dev
 
 La dirección predeterminada es `http://127.0.0.1:5173`. La autenticación se activa localmente si se definen sus tres variables de entorno; de lo contrario, solo en desarrollo se considera autenticado al visitante local.
 
-El lanzador `Iniciar.bat` ejecuta la instalación si faltan las dependencias, abre el servidor en una ventana de consola separada, espera a que responda la API y abre el sitio en el navegador. También se creó un acceso directo en el Escritorio de la máquina de desarrollo; ese acceso directo de Windows no forma parte del repositorio.
+El lanzador `Iniciar.bat` ejecuta la instalación si faltan las dependencias y llama a `Iniciar.ps1`. El script inicia el servidor en la misma consola, espera el health check y abre Edge o Chrome en una ventana de aplicación aislada con un perfil dedicado. Cuando se cierra esa ventana, detiene el proceso del servidor y el lanzador termina, cerrando también la consola. También se creó un acceso directo en el Escritorio de la máquina de desarrollo; ese acceso directo de Windows no forma parte del repositorio.
 
 Para compilar y ejecutar en modo de producción:
 
