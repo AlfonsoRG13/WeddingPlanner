@@ -20,7 +20,7 @@ const port = Number(process.env.PORT) || (production ? 4173 : 5173);
 const database = process.env.DATABASE_URL
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
+      ssl: process.env.DATABASE_SSL === "true" ? true : undefined,
     })
   : null;
 const authEnabled = production || Boolean(process.env.APP_PASSWORD);

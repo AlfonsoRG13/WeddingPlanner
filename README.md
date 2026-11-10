@@ -13,17 +13,18 @@ npm.cmd run dev
 
 Abre `http://127.0.0.1:5173`. En Windows también puedes usar `Iniciar.bat`. En modo local, la aplicación lee y escribe `data/guests.json` y `data/expenses.json`.
 
-## Publicar en internet con Render
+## Publicar gratis con Render y Supabase
 
 El repositorio público contiene el código, pero no los datos de invitados ni gastos. Los archivos reales permanecen excluidos de Git; en la versión publicada los datos viven en PostgreSQL. La app requiere un usuario y contraseña compartidos antes de mostrar o modificar información. GitHub Pages por sí solo no puede ejecutar el servidor ni guardar cambios en una base de datos.
 
-1. Crea un repositorio público vacío en GitHub y sube el código con Git. Antes de confirmar, comprueba que `data/guests.json` y `data/expenses.json` no estén entre los archivos preparados para commit. No los agregues con `git add -f`.
-2. En Render, crea un **Blueprint** y conecta ese repositorio. Render leerá [`render.yaml`](./render.yaml) para crear el servicio web y PostgreSQL.
-3. Durante la configuración, define `APP_USERNAME` y una contraseña fuerte de al menos 16 caracteres para `APP_PASSWORD`. `APP_SESSION_SECRET` se genera automáticamente. Guarda la contraseña en un gestor seguro; no la pongas en GitHub.
-4. Cuando termine el despliegue, Render proporcionará una URL pública `onrender.com`. La aplicación estará detrás del inicio de sesión.
-5. Para copiar los datos existentes del equipo a PostgreSQL, sigue **Migrar los datos locales** en [docs/technical.md](./docs/technical.md). La migración es manual, se ejecuta una sola vez y se conecta a la URL externa de PostgreSQL. No se suben los JSON al repositorio.
+1. Crea una base de datos PostgreSQL en el plan gratuito de Supabase.
+2. En los ajustes de conexión de Supabase, elige la **Transaction pooler** y copia la URI de PostgreSQL. Configura TLS para las conexiones externas y conserva la URL en un gestor seguro.
+3. En Render, crea un **Blueprint** y conecta este repositorio. Render leerá [`render.yaml`](./render.yaml) para crear un servicio web en el plan gratuito; no crea ni cobra una base de datos.
+4. Cuando Render solicite variables, configura `DATABASE_URL` con la URI del pooler de Supabase, `APP_USERNAME` y una contraseña única de al menos 16 caracteres para `APP_PASSWORD`. Deja `DATABASE_SSL=true`; Render genera automáticamente `APP_SESSION_SECRET`.
+5. Cuando termine el despliegue, Render proporcionará una URL pública `onrender.com`. La aplicación estará detrás del inicio de sesión.
+6. Para copiar los datos existentes del equipo a PostgreSQL, sigue **Migrar los datos locales** en [docs/technical.md](./docs/technical.md). Usa la misma URL externa de conexión en `DATABASE_URL`. La migración es manual y se detiene si la base ya contiene datos.
 
-El despliegue y la base de datos están sujetos a los planes, límites, disponibilidad y costos vigentes del proveedor. Configura respaldos periódicos en Render y conserva también una copia protegida de tus datos.
+**Límites importantes del plan gratuito:** Render suspende el servidor tras 15 minutos sin actividad, así que la primera visita puede tardar cerca de un minuto; dispone de 750 horas gratuitas al mes por workspace. Supabase puede pausar la base después de una semana de inactividad y limita el almacenamiento de base de datos a 500 MB. En el plan gratuito de Supabase no hay respaldos automáticos diarios; conserva copias privadas de los datos y verifica las políticas vigentes de ambos proveedores. Esta opción es adecuada para probar o para un proyecto personal de poco uso, pero no ofrece disponibilidad garantizada.
 
 ## Ejecutar en producción local
 

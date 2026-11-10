@@ -13,7 +13,7 @@ if (!databaseUrl) {
 
 const pool = new Pool({
   connectionString: databaseUrl,
-  ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
+  ssl: process.env.DATABASE_SSL === "true" ? true : undefined,
 });
 
 function readJsonFile(fileName) {
