@@ -248,3 +248,20 @@ tr:hover .row-actions, .row-actions:focus-within { opacity: 1; }
   .payment-form label { min-width: 42%; }
   .payment-form .payment-note-input { flex: 1 1 100%; }
 }
+
+.auth-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.auth-card { width: min(100%, 390px); padding: 34px; background: var(--paper); border: 1px solid #eeece5; border-radius: 3px; text-align: center; }
+.auth-brand-mark { width: 42px; height: 42px; margin: 0 auto 20px; font-size: 24px; }
+.auth-card .eyebrow { justify-content: center; }
+.auth-card h1 { margin: 12px 0; color: var(--ink); font: 400 34px "Playfair Display", Georgia, serif; }
+.auth-description { margin: 0 0 24px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.auth-form { display: grid; gap: 15px; text-align: left; }
+.auth-form label { display: grid; gap: 7px; color: #687063; font-size: 11px; }
+.auth-form input { width: 100%; height: 40px; padding: 0 11px; border: 1px solid var(--line); background: white; color: var(--ink); }
+.auth-form .button { min-height: 40px; }
+.sign-out-button { align-self: center; }
+
+@media (max-width: 600px) {
+  .auth-card { padding: 28px 22px; }
+  .sign-out-button { margin-left: auto; }
+}

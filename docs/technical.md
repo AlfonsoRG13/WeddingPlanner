@@ -4,7 +4,7 @@ Este documento describe la arquitectura y el comportamiento implementado. Debe a
 
 ## Alcance actual
 
-La aplicación es un organizador de boda local. Las secciones implementadas administran invitados y gastos; otras secciones, como mesas y fotos, quedan para futuras ampliaciones.
+La aplicación administra invitados y gastos. Puede ejecutarse localmente con archivos JSON o publicarse como una aplicación web autenticada con PostgreSQL; otras secciones, como mesas y fotos, quedan para futuras ampliaciones.
 
 La interfaz permite:
 
@@ -24,9 +24,11 @@ La interfaz permite:
 - React y TypeScript para la interfaz.
 - Vite para el desarrollo y la compilación del cliente.
 - Node.js, módulos ES y el módulo HTTP nativo para el servidor local y la API.
-- Un archivo JSON local como almacenamiento persistente.
+- Archivos JSON para persistencia local y PostgreSQL (JSONB) para el despliegue administrado.
+- Render Blueprint para aprovisionar el servicio web y la base de datos.
+- Sesiones firmadas en cookie `HttpOnly`, con autenticación compartida configurada por variables de entorno.
 
-No se requiere una base de datos ni un servicio externo. El aspecto visual utiliza fuentes del sistema para funcionar sin solicitar fuentes a Internet.
+El aspecto visual utiliza fuentes del sistema para funcionar sin solicitar fuentes a Internet.
 
 ## Estructura del proyecto
 
@@ -40,6 +42,7 @@ No se requiere una base de datos ni un servicio externo. El aspecto visual utili
 ├── src/
 │   ├── components/layout/ # Encabezado, bienvenida y pie reutilizables
 │   ├── features/
+│   │   ├── auth/        # Formulario de inicio de sesión
 │   │   ├── guests/       # Sección de invitados, tipos, opciones y componentes
 │   │   └── expenses/     # Sección de gastos, tipos, cálculos y componentes
 │   ├── shared/
@@ -49,7 +52,10 @@ No se requiere una base de datos ni un servicio externo. El aspecto visual utili
 │   ├── main.tsx          # Entrada de React
 │   └── styles.css        # Estilos adaptables
 ├── Iniciar.bat           # Lanzador para Windows
-├── server.mjs            # API, persistencia y servidor de archivos
+├── scripts/
+│   └── migrate-json-to-postgres.mjs # Importación única de datos locales
+├── server.mjs            # API, autenticación, persistencia y servidor web
+├── render.yaml           # Configuración de despliegue en Render
 ├── vite.config.ts        # Configuración de Vite
 ├── index.html            # Documento HTML de entrada
 └── package.json          # Dependencias y comandos npm
@@ -57,7 +63,7 @@ No se requiere una base de datos ni un servicio externo. El aspecto visual utili
 
 ## Modelo de datos
 
-`data/guests.json` contiene un arreglo de objetos. Cada invitado tiene esta forma:
+Localmente, `data/guests.json` contiene un arreglo de objetos; cada invitado tiene esta forma. En PostgreSQL, el arreglo se guarda en la columna `guests` de `wedding_data`:
 
 ```json
 {
@@ -89,7 +95,7 @@ Una invitación simbólica se registra sin asistencia: al guardar, `confirmed` q
 
 ### Modelo de gastos
 
-`data/expenses.json` contiene un arreglo de conceptos. Cada concepto incluye:
+Localmente, `data/expenses.json` contiene un arreglo de conceptos; en PostgreSQL se guarda en la columna `expenses` de `wedding_data`. Cada concepto incluye:
 
 ```json
 {
@@ -116,11 +122,31 @@ Los pagos tienen un importe positivo, fecha ISO `AAAA-MM-DD` y nota opcional. El
 
 ### Persistencia y compatibilidad
 
-El servidor carga el archivo al iniciar y conserva la lista en memoria durante su ejecución. Al iniciar, si encuentra `firstName` y `lastName`, combina sus valores en `name` y guarda el formato actualizado. Cada alta, edición o eliminación escribe la lista completa en un archivo temporal y luego lo renombra sobre `guests.json`, reduciendo la posibilidad de dejar un archivo parcialmente escrito.
+En desarrollo local, el servidor carga los JSON al iniciar y conserva las listas en memoria. Al iniciar, si encuentra `firstName` y `lastName`, combina sus valores en `name` y guarda el formato actualizado. Cada alta, edición o eliminación escribe un archivo temporal y luego lo renombra sobre el JSON original.
 
-Si los archivos todavía no existen, el servidor crea `data/guests.json` y `data/expenses.json` con listas vacías. Al cargar registros antiguos de invitados, completa los campos incorporados posteriormente (`symbolicInvitation`, `isChild` y `weddingRole`) con `false`, `false` y `none`, respectivamente.
+Cuando `DATABASE_URL` está configurada, el servidor crea la tabla `wedding_data` si hace falta y guarda los dos arreglos como JSONB. El servicio de Render se configura con una sola instancia; las llamadas a la API se serializan dentro de ese proceso. En producción, el servidor exige tanto PostgreSQL como los secretos de autenticación; no cae silenciosamente a archivos locales.
 
-Los datos son locales a la computadora y al directorio del proyecto. No se sincronizan entre dispositivos. Para respaldarlos, copia `data/guests.json` y `data/expenses.json` con el servidor detenido. Ambos archivos están excluidos de Git porque pueden contener información personal.
+Al iniciar registros JSON antiguos, se completan los campos incorporados posteriormente (`symbolicInvitation`, `isChild` y `weddingRole`) con `false`, `false` y `none`. `data/guests.json`, `data/expenses.json` y los archivos `.env` se excluyen de Git: el código puede estar en un repositorio público, pero no se deben publicar los datos reales ni credenciales.
+
+#### Migrar los JSON locales a PostgreSQL
+
+La migración importa ambos archivos de manera transaccional y solo cuando las dos listas de la base están vacías. No se ejecuta automáticamente al desplegar y no sobrescribe datos existentes.
+
+1. Despliega primero la aplicación y la base de datos desde el Blueprint de Render.
+2. En Render, copia la **External Database URL** de la base. No la publiques ni la guardes en el repositorio.
+3. En PowerShell, desde la raíz del proyecto, ejecuta:
+
+   ```powershell
+   $env:DATABASE_URL = Read-Host "Pega la External Database URL de Render"
+   $env:DATABASE_SSL = "true"
+   npm.cmd run migrate:json
+   Remove-Item Env:DATABASE_URL
+   Remove-Item Env:DATABASE_SSL
+   ```
+
+4. Comprueba en el sitio que aparezcan invitados y gastos, y configura respaldos de PostgreSQL en el proveedor. Conserva los JSON locales como respaldo protegido hasta verificar la importación.
+
+El comando `npm.cmd run migrate:json` requiere que los dos archivos locales estén presentes. Si la base ya contiene invitados o gastos, detiene la migración sin reemplazarlos.
 
 ## API local
 
@@ -128,6 +154,10 @@ El cliente y el servidor se comunican mediante JSON:
 
 | Método | Ruta | Comportamiento |
 |---|---|---|
+| `GET` | `/api/health` | Health check público sin datos personales |
+| `GET` | `/api/auth/session` | Informa si la sesión está autenticada |
+| `POST` | `/api/auth/login` | Valida usuario/contraseña y crea una cookie de sesión |
+| `POST` | `/api/auth/logout` | Elimina la cookie de sesión |
 | `GET` | `/api/guests` | Devuelve la lista completa |
 | `POST` | `/api/guests` | Valida y agrega un invitado; responde `201` |
 | `PUT` | `/api/guests/:id` | Valida y reemplaza los datos del invitado |
@@ -139,15 +169,27 @@ El cliente y el servidor se comunican mediante JSON:
 | `POST` | `/api/expenses/:id/payments` | Valida y agrega un pago |
 | `DELETE` | `/api/expenses/:id/payments/:paymentId` | Elimina un pago existente |
 
-Las rutas para un identificador inexistente responden `404`; los datos que no cumplen el esquema responden `400`. Los cuerpos de solicitud tienen un máximo de 1 MB.
+Todas las rutas de datos requieren sesión válida cuando se activa la autenticación. Las cookies son `HttpOnly`, `SameSite=Strict`, y en producción `Secure`; las sesiones firmadas expiran en 12 horas. Los intentos fallidos de inicio de sesión se limitan por IP. Las rutas de datos para un identificador inexistente responden `404`; los datos que no cumplen el esquema responden `400`. Los cuerpos de solicitud tienen un máximo de 1 MB.
 
-En desarrollo, el servidor Node integra el middleware de Vite y entrega la aplicación. En producción, sirve los archivos compilados de `dist/`. En ambos casos sirve también la API.
+En desarrollo, el servidor Node integra el middleware de Vite y entrega la aplicación; sin variables de autenticación, la sesión local no requiere login. En producción, sirve los archivos compilados de `dist/`, requiere PostgreSQL y credenciales, y escucha en `0.0.0.0` para el proveedor. En ambos casos sirve también la API.
+
+Variables requeridas en producción:
+
+| Variable | Propósito |
+|---|---|
+| `DATABASE_URL` | Conexión a PostgreSQL |
+| `APP_USERNAME` | Usuario compartido de acceso |
+| `APP_PASSWORD` | Contraseña compartida (mínimo 16 caracteres) |
+| `APP_SESSION_SECRET` | Clave de firma de sesiones (mínimo 32 caracteres) |
+
+`DATABASE_SSL=true` habilita TLS para conexiones PostgreSQL externas. Render genera `APP_SESSION_SECRET` automáticamente y solicita el usuario y la contraseña como secretos al crear el Blueprint.
 
 ## Organización del frontend
 
 El frontend está organizado por responsabilidad y dominio:
 
 - `App.tsx` mantiene la carga compartida de invitados, la navegación entre secciones y la composición general.
+- `features/auth/` contiene la pantalla de inicio de sesión.
 - `components/layout/` contiene piezas de presentación del shell que se reutilizan entre secciones.
 - `features/guests/` y `features/expenses/` mantienen su propio flujo, tipos, constantes y componentes de interfaz.
 - `features/*/components/` separa formularios, resúmenes, herramientas de búsqueda/listado y tarjetas en componentes React enfocados.
@@ -167,7 +209,7 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-La dirección predeterminada es `http://127.0.0.1:5173`.
+La dirección predeterminada es `http://127.0.0.1:5173`. La autenticación se activa localmente si se definen sus tres variables de entorno; de lo contrario, solo en desarrollo se considera autenticado al visitante local.
 
 El lanzador `Iniciar.bat` ejecuta la instalación si faltan las dependencias, abre el servidor en una ventana de consola separada, espera a que responda la API y abre el sitio en el navegador. También se creó un acceso directo en el Escritorio de la máquina de desarrollo; ese acceso directo de Windows no forma parte del repositorio.
 
@@ -178,9 +220,9 @@ npm.cmd run build
 npm.cmd start
 ```
 
-La versión compilada queda disponible en `http://127.0.0.1:4173`. La variable de entorno `PORT` permite elegir otro puerto.
+La ejecución de producción requiere `DATABASE_URL`, `APP_USERNAME`, `APP_PASSWORD` y `APP_SESSION_SECRET`; `PORT` permite elegir el puerto. El despliegue administrado se configura en `render.yaml`.
 
-El servidor escucha en `127.0.0.1`, por lo que la aplicación no se publica en la red local. `npm run preview` es el comando de Vite para previsualizar archivos compilados, pero no sustituye al servidor Node cuando se necesita la API y el guardado JSON.
+El servidor escucha en `127.0.0.1` en desarrollo y `0.0.0.0` en producción. `npm run preview` es el comando de Vite para previsualizar archivos compilados, pero no sustituye al servidor Node que proporciona API, autenticación y persistencia.
 
 ## Actualización de esta documentación
 

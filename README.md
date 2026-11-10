@@ -1,36 +1,41 @@
 # Nuestro día
 
-Organizador local de boda, creado con React y TypeScript. Permite administrar invitados y sus roles de boda, y llevar los conceptos de gastos y pagos.
+Organizador de boda creado con React, TypeScript y Node.js. Administra invitados, acompañantes, confirmaciones, gastos y pagos. Puede ejecutarse localmente con archivos JSON o publicarse como una aplicación web privada con PostgreSQL.
 
-## Requisitos
+## Desarrollo local
 
-- Node.js 20.19+ o 22.12+
-- npm
+Requisitos: Node.js 20.19+ o 22.12+ y npm.
 
-## Iniciar en desarrollo
-
-```sh
-npm install
-npm run dev
+```powershell
+npm.cmd install
+npm.cmd run dev
 ```
 
-Abre la dirección que aparece en la terminal (por defecto `http://127.0.0.1:5173`). La aplicación y el servicio local se ejecutan juntos.
+Abre `http://127.0.0.1:5173`. En Windows también puedes usar `Iniciar.bat`. En modo local, la aplicación lee y escribe `data/guests.json` y `data/expenses.json`.
 
-En PowerShell, si la política de ejecución bloquea `npm`, usa `npm.cmd` en lugar de `npm` para ejecutar estos comandos.
+## Publicar en internet con Render
 
-En Windows también puedes hacer doble clic en `Iniciar.bat`. El archivo inicia el servidor en una ventana de consola y abre la aplicación en el navegador cuando esté lista. Si faltan las dependencias, las instala primero.
+El repositorio público contiene el código, pero no los datos de invitados ni gastos. Los archivos reales permanecen excluidos de Git; en la versión publicada los datos viven en PostgreSQL. La app requiere un usuario y contraseña compartidos antes de mostrar o modificar información. GitHub Pages por sí solo no puede ejecutar el servidor ni guardar cambios en una base de datos.
 
-## Crear y ejecutar la versión de producción
+1. Crea un repositorio público vacío en GitHub y sube el código con Git. Antes de confirmar, comprueba que `data/guests.json` y `data/expenses.json` no estén entre los archivos preparados para commit. No los agregues con `git add -f`.
+2. En Render, crea un **Blueprint** y conecta ese repositorio. Render leerá [`render.yaml`](./render.yaml) para crear el servicio web y PostgreSQL.
+3. Durante la configuración, define `APP_USERNAME` y una contraseña fuerte de al menos 16 caracteres para `APP_PASSWORD`. `APP_SESSION_SECRET` se genera automáticamente. Guarda la contraseña en un gestor seguro; no la pongas en GitHub.
+4. Cuando termine el despliegue, Render proporcionará una URL pública `onrender.com`. La aplicación estará detrás del inicio de sesión.
+5. Para copiar los datos existentes del equipo a PostgreSQL, sigue **Migrar los datos locales** en [docs/technical.md](./docs/technical.md). La migración es manual, se ejecuta una sola vez y se conecta a la URL externa de PostgreSQL. No se suben los JSON al repositorio.
 
-```sh
-npm run build
-npm start
+El despliegue y la base de datos están sujetos a los planes, límites, disponibilidad y costos vigentes del proveedor. Configura respaldos periódicos en Render y conserva también una copia protegida de tus datos.
+
+## Ejecutar en producción local
+
+La ejecución de producción requiere `DATABASE_URL`, `APP_USERNAME`, `APP_PASSWORD` y `APP_SESSION_SECRET`. Configura estos valores como variables de entorno y luego ejecuta:
+
+```powershell
+npm.cmd run build
+npm.cmd start
 ```
 
-La versión de producción queda disponible en `http://127.0.0.1:4173`.
+Consulta [.env.example](./.env.example) para ver los nombres de las variables. No guardes valores secretos en ese archivo ni en Git.
 
-Los invitados y gastos se guardan localmente en `data/guests.json` y `data/expenses.json`. El servidor escucha únicamente en la interfaz local. Haz una copia de ambos archivos para respaldar los datos; no se incluyen en Git para evitar publicar información personal.
+## Documentación
 
-## Documentación técnica
-
-La arquitectura, el modelo de datos, la API, la persistencia y los comandos están descritos en [docs/technical.md](./docs/technical.md). Mantén esa guía actualizada conforme se agreguen secciones y funciones.
+La arquitectura, la autenticación, los modelos, la persistencia, la migración y el despliegue están descritos en [docs/technical.md](./docs/technical.md).

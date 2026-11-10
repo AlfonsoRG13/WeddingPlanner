@@ -7,13 +7,15 @@
     "dev": "node server.mjs",
     "build": "tsc -b && vite build",
     "start": "node server.mjs --production",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:json": "node scripts/migrate-json-to-postgres.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "pg": "^8.23.1",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
