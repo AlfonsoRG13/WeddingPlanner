@@ -80,6 +80,7 @@ function ExpensesSection({ guestCount, guestCountLoading, guestCountError }: Exp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [expandedExpenses, setExpandedExpenses] = useState<Set<string>>(() => new Set());
   const [formOpen, setFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -106,14 +107,17 @@ function ExpensesSection({ guestCount, guestCountLoading, guestCountError }: Exp
   const totalPending = Math.max(totalCost - totalPaid, 0);
   const filteredExpenses = useMemo(() => {
     const search = normalizeSearch(query);
-    if (!search) return expenses;
-    return expenses.filter((expense) => normalizeSearch([
-      expense.concept,
-      expense.responsible,
-      expense.phone,
-      ...expense.payments.map((payment) => payment.note),
-    ].join(" ")).includes(search));
-  }, [expenses, query]);
+    return expenses.filter((expense) => {
+      const matchesSearch = !search || normalizeSearch([
+        expense.concept,
+        expense.responsible,
+        expense.phone,
+        ...expense.payments.map((payment) => payment.note),
+      ].join(" ")).includes(search);
+      const hasAssignedTotal = expense.pricePerPerson !== null || expense.fixedAmount > 0;
+      return matchesSearch && (!unassignedOnly || !hasAssignedTotal);
+    });
+  }, [expenses, query, unassignedOnly]);
 
   function openNewExpense() {
     setEditingExpense(null);
@@ -279,6 +283,17 @@ function ExpensesSection({ guestCount, guestCountLoading, guestCountError }: Exp
             />
             {query && <button type="button" onClick={() => setQuery("")} aria-label="Limpiar búsqueda">×</button>}
           </label>
+          <label className="expense-filter">
+            <span>Mostrar</span>
+            <select
+              value={unassignedOnly ? "unassigned" : "all"}
+              onChange={(event) => setUnassignedOnly(event.target.value === "unassigned")}
+              aria-label="Filtrar gastos por monto asignado"
+            >
+              <option value="all">Todos los gastos</option>
+              <option value="unassigned">Sin monto asignado</option>
+            </select>
+          </label>
           <span className="expense-result-count">
             {filteredExpenses.length} de {expenses.length} conceptos
           </span>
@@ -287,8 +302,15 @@ function ExpensesSection({ guestCount, guestCountLoading, guestCountError }: Exp
           <div className="expense-empty expense-no-results">
             <span className="empty-ornament" aria-hidden="true">⌕</span>
             <h3>No encontramos gastos</h3>
-            <p>Prueba con otro concepto, encargado, teléfono o nota de pago.</p>
-            <button className="button button-outline" onClick={() => setQuery("")}>Limpiar búsqueda</button>
+            <p>{unassignedOnly && !query
+              ? "Todos tus conceptos ya tienen un monto total asignado."
+              : "Prueba con otra búsqueda o cambia el filtro de monto."}</p>
+            <button
+              className="button button-outline"
+              onClick={() => { setQuery(""); setUnassignedOnly(false); }}
+            >
+              Limpiar filtros
+            </button>
           </div>
         ) : (
         <div className="expense-list">
