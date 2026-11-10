@@ -9,6 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { createServer as createViteServer } from "vite";
+import { getDatabaseConnectionConfig } from "./database-connection.mjs";
 
 const { Pool } = pg;
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -18,10 +19,9 @@ const expensesFile = path.join(dataDirectory, "expenses.json");
 const production = process.argv.includes("--production");
 const port = Number(process.env.PORT) || (production ? 4173 : 5173);
 const database = process.env.DATABASE_URL
-  ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_SSL === "true" ? true : undefined,
-    })
+  ? new Pool(process.env.DATABASE_SSL === "true"
+      ? getDatabaseConnectionConfig(process.env.DATABASE_URL, process.env.DATABASE_CA_CERT)
+      : { connectionString: process.env.DATABASE_URL })
   : null;
 const authEnabled = production || Boolean(process.env.APP_PASSWORD);
 const appUsername = process.env.APP_USERNAME || "";
@@ -34,6 +34,7 @@ const failedLogins = new Map();
 
 if (production) {
   if (!database) throw new Error("DATABASE_URL es obligatorio en producción.");
+  if (process.env.DATABASE_SSL !== "true") throw new Error("DATABASE_SSL=true es obligatorio en producción.");
   if (!appUsername || appPassword.length < 16 || sessionSecret.length < 32) {
     throw new Error("Configura APP_USERNAME, APP_PASSWORD (mínimo 16 caracteres) y APP_SESSION_SECRET (mínimo 32 caracteres).");
   }

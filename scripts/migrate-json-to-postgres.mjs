@@ -2,19 +2,20 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { getDatabaseConnectionConfig } from "../database-connection.mjs";
 
 const { Pool } = pg;
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  throw new Error("Configura DATABASE_URL con la URL externa de PostgreSQL antes de migrar.");
+  throw new Error("Configura DATABASE_URL con la URL de PostgreSQL antes de migrar.");
+}
+if (process.env.DATABASE_SSL !== "true") {
+  throw new Error("Configura DATABASE_SSL=true para conectarte a PostgreSQL de forma cifrada.");
 }
 
-const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: process.env.DATABASE_SSL === "true" ? true : undefined,
-});
+const pool = new Pool(getDatabaseConnectionConfig(databaseUrl, process.env.DATABASE_CA_CERT));
 
 function readJsonFile(fileName) {
   return readFile(path.join(root, "data", fileName), "utf8").then((content) => {

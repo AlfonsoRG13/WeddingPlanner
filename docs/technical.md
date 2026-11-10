@@ -135,7 +135,7 @@ La migración importa ambos archivos de manera transaccional y solo cuando las d
 1. Crea un proyecto Supabase en el plan gratuito y espera a que PostgreSQL esté listo.
 2. En Supabase, abre la información de conexión y copia la URI de PostgreSQL del **Transaction pooler** para conexiones IPv4. No la publiques ni la guardes en el repositorio.
 3. En Render, conecta el repositorio y crea un Blueprint desde `render.yaml`. El Blueprint configura solamente el servidor web gratuito.
-4. En Render, configura `DATABASE_URL` con la URI del pooler de Supabase, `DATABASE_SSL=true`, `APP_USERNAME` y `APP_PASSWORD` (mínimo 16 caracteres). Render genera `APP_SESSION_SECRET` automáticamente.
+4. En Render, configura `DATABASE_URL` con la URI del pooler de Supabase, `DATABASE_SSL=true`, `APP_USERNAME` y `APP_PASSWORD` (mínimo 16 caracteres). Render genera `APP_SESSION_SECRET` automáticamente. Opcionalmente, configura `DATABASE_CA_CERT` con el certificado raíz de Supabase para validar la identidad del servidor.
 5. Espera a que termine el despliegue. En PowerShell, desde la raíz de tu copia local del proyecto, configura la URL de conexión de Supabase y ejecuta:
 
    ```powershell
@@ -148,7 +148,7 @@ La migración importa ambos archivos de manera transaccional y solo cuando las d
 
 6. Comprueba en el sitio que aparezcan invitados y gastos. Conserva los JSON locales como respaldo protegido y exporta periódicamente la información: el plan gratuito de Supabase no incluye respaldos automáticos diarios.
 
-El comando `npm.cmd run migrate:json` requiere que los dos archivos locales estén presentes. Si la base ya contiene invitados o gastos, detiene la migración sin reemplazarlos. En el ejemplo de PowerShell, la URL procede de Supabase, no de Render.
+El comando `npm.cmd run migrate:json` requiere que los dos archivos locales estén presentes. Si la base ya contiene invitados o gastos, detiene la migración sin reemplazarlos. En el ejemplo de PowerShell, la URL procede de Supabase, no de Render. Si se configura `DATABASE_CA_CERT`, define también esa variable de entorno local con el contenido del certificado raíz para que el importador pueda validarlo.
 
 El alojamiento gratuito tiene limitaciones de disponibilidad: Render suspende el servidor tras 15 minutos sin solicitudes y la primera petición puede tardar cerca de un minuto en reactivarlo; el plan proporciona 750 horas gratuitas por workspace y mes. Render también puede suspender servicios gratuitos por volúmenes inusualmente altos de tráfico saliente a servicios externos. Supabase Free ofrece 500 MB de base de datos y puede pausar proyectos tras una semana sin actividad. El proyecto puede reanudarse desde Supabase. El plan gratuito de Supabase no ofrece respaldos automáticos diarios. Los límites y condiciones pueden cambiar; verifica los [límites de Render](https://render.com/docs/free) y los [precios de Supabase](https://supabase.com/pricing) antes del despliegue.
 
@@ -186,7 +186,7 @@ Variables requeridas en producción:
 | `APP_PASSWORD` | Contraseña compartida (mínimo 16 caracteres) |
 | `APP_SESSION_SECRET` | Clave de firma de sesiones (mínimo 32 caracteres) |
 
-`DATABASE_SSL=true` habilita TLS validado por Node.js para conexiones PostgreSQL externas. Render genera `APP_SESSION_SECRET` automáticamente y solicita el usuario y la contraseña como secretos al crear el Blueprint. Para el alojamiento gratuito propuesto, configura `DATABASE_URL` con el pooler de Supabase.
+`DATABASE_SSL=true` exige una conexión TLS cifrada. Para compatibilidad con el certificado del Transaction pooler de Supabase, si `DATABASE_CA_CERT` no está configurado, Node.js no valida la cadena de certificados del servidor; esto cifra el tráfico, pero no protege contra un intermediario que suplante el servidor. Para validación completa, configura `DATABASE_CA_CERT` con el certificado raíz descargado desde Supabase. Los parámetros TLS de la URL se normalizan para evitar que `pg` anule esta configuración. Render genera `APP_SESSION_SECRET` automáticamente y solicita el usuario y la contraseña como secretos al crear el Blueprint. Para el alojamiento gratuito propuesto, configura `DATABASE_URL` con el pooler de Supabase.
 
 ## Organización del frontend
 

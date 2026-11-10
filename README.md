@@ -18,9 +18,9 @@ Abre `http://127.0.0.1:5173`. En Windows también puedes usar `Iniciar.bat`. En 
 El repositorio público contiene el código, pero no los datos de invitados ni gastos. Los archivos reales permanecen excluidos de Git; en la versión publicada los datos viven en PostgreSQL. La app requiere un usuario y contraseña compartidos antes de mostrar o modificar información. GitHub Pages por sí solo no puede ejecutar el servidor ni guardar cambios en una base de datos.
 
 1. Crea una base de datos PostgreSQL en el plan gratuito de Supabase.
-2. En los ajustes de conexión de Supabase, elige la **Transaction pooler** y copia la URI de PostgreSQL. Configura TLS para las conexiones externas y conserva la URL en un gestor seguro.
+2. En los ajustes de conexión de Supabase, elige la **Transaction pooler** y copia la URI de PostgreSQL. Conserva la URL en un gestor seguro. Para verificar también el certificado TLS del servidor, descarga el certificado raíz de la base en Supabase.
 3. En Render, crea un **Blueprint** y conecta este repositorio. Render leerá [`render.yaml`](./render.yaml) para crear un servicio web en el plan gratuito; no crea ni cobra una base de datos.
-4. Cuando Render solicite variables, configura `DATABASE_URL` con la URI del pooler de Supabase, `APP_USERNAME` y una contraseña única de al menos 16 caracteres para `APP_PASSWORD`. Deja `DATABASE_SSL=true`; Render genera automáticamente `APP_SESSION_SECRET`.
+4. Cuando Render solicite variables, configura `DATABASE_URL` con la URI del pooler de Supabase, `APP_USERNAME` y una contraseña única de al menos 16 caracteres para `APP_PASSWORD`. Deja `DATABASE_SSL=true`; Render genera automáticamente `APP_SESSION_SECRET`. Opcionalmente, configura `DATABASE_CA_CERT` con el contenido del certificado raíz descargado de Supabase para validar el certificado del servidor además de cifrar la conexión.
 5. Cuando termine el despliegue, Render proporcionará una URL pública `onrender.com`. La aplicación estará detrás del inicio de sesión.
 6. Para copiar los datos existentes del equipo a PostgreSQL, sigue **Migrar los datos locales** en [docs/technical.md](./docs/technical.md). Usa la misma URL externa de conexión en `DATABASE_URL`. La migración es manual y se detiene si la base ya contiene datos.
 
